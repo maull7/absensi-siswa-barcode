@@ -12,6 +12,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once '../koneksi.php';
+$barcodeConfig = require __DIR__ . '/../barcode_config.php';
+$generalBarcodes = [
+    'masuk' => is_array($barcodeConfig) && isset($barcodeConfig['masuk']) ? (string) $barcodeConfig['masuk'] : 'ABSENSI-MASUK',
+    'pulang' => is_array($barcodeConfig) && isset($barcodeConfig['pulang']) ? (string) $barcodeConfig['pulang'] : 'ABSENSI-PULANG',
+];
 
 date_default_timezone_set('Asia/Jakarta');
 
@@ -19,6 +24,9 @@ $sessionNis = $_SESSION['nis'];
 $scannedNis = $_POST['nis'] ?? '';
 $captureTime = $_POST['time_val'] ?? '';
 $captureDate = $_POST['date_val'] ?? '';
+$mode = $_POST['mode'] ?? '';
+$rawCode = trim($_POST['raw_code'] ?? $scannedNis);
+$displayBarcode = $rawCode !== '' ? $rawCode : $scannedNis;
 
 $validationMessage = 'Validasi Gagal';
 $isValid = false;
@@ -27,6 +35,8 @@ $kelas = '';
 
 if ($scannedNis !== $sessionNis) {
     $validationMessage = 'Barcode tidak sesuai dengan akun yang sedang login.';
+} elseif ($rawCode !== $sessionNis && (!isset($generalBarcodes[$mode]) || $rawCode !== $generalBarcodes[$mode])) {
+    $validationMessage = 'Barcode tidak dikenali untuk mode absensi ini.';
 } else {
     $stmt = $koneksi->prepare('SELECT nama, kelas FROM data_siswa WHERE nis = ?');
 
@@ -102,7 +112,11 @@ if ($dateFormatted === '') {
                                 <table class="table table-sm table-bordered">
                                     <tbody>
                                         <tr>
-                                            <th scope="row" class="w-50">NIS</th>
+                                            <th scope="row" class="w-50">Barcode</th>
+                                            <td><?= htmlspecialchars($displayBarcode, ENT_QUOTES, 'UTF-8'); ?></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">NIS</th>
                                             <td><?= htmlspecialchars($scannedNis, ENT_QUOTES, 'UTF-8'); ?></td>
                                         </tr>
                                         <tr>

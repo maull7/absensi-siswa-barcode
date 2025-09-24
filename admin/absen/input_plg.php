@@ -116,8 +116,9 @@ if (!isset($_SESSION['username'])) {
                     </a>
                     <div id="data" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
                         <div class="bg-white py-2 collapse-inner rounded">
-                            <a class="collapse-item " href="input.php">Masuk</a>
+                            <a class="collapse-item" href="input.php">Masuk</a>
                             <a class="collapse-item active" href="input_plg.php">Pulang</a>
+                            <a class="collapse-item" href="barcode_umum.php">Barcode Masuk/Pulang</a>
                         </div>
                     </div>
                 </li>
