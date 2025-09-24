@@ -27,10 +27,10 @@ if ($waktu_sekarang > $batas_absen) {
 }
 
 // Menampilkan hasil untuk debugging (bisa dihapus dalam implementasi produksi)
-echo "Hari ini: $nama_hari\n";
-echo "Waktu sekarang: $waktu_sekarang\n";
-echo "Batas absen: $batas_absen\n";
-echo "Status absen: $status_absen\n";
+error_log("Hari ini: $nama_hari");
+error_log("Waktu sekarang: $waktu_sekarang");
+error_log("Batas absen: $batas_absen");
+error_log("Status absen: $status_absen");
 
 // Misalkan variabel $nis dan $jam_masuk sudah diambil dari input form sebelumnya
 $nis = $_POST['nis'];
@@ -41,8 +41,9 @@ $cek_query = "SELECT * FROM masuk WHERE nis = '$nis' AND DATE_FORMAT(tanggal, '%
 $cek_result = mysqli_query($koneksi, $cek_query);
 
 if (mysqli_num_rows($cek_result) > 0) {
-    // Jika sudah ada data, tampilkan pesan kesalahan
-    echo "<script>alert('Anda sudah melakukan absen hari ini.');window.location='../input.php';</script>";
+    // Jika sudah ada data, arahkan kembali ke halaman absensi
+    header("Location: ../index.php");
+    exit;
 } else {
     // Jika belum ada data, jalankan query INSERT
     $query = "INSERT INTO masuk (nis, jam_masuk, tanggal, status) VALUES ('$nis','$jam_masuk', '$tanggal_sekarang', '$status_absen')";
@@ -53,7 +54,8 @@ if (mysqli_num_rows($cek_result) > 0) {
         die("Query gagal dijalankan: " . mysqli_errno($koneksi) . " - " . mysqli_error($koneksi));
     } else {
         // tampilkan alert dan redirect ke halaman input_plg.php
-        header("location:../index.php");
+        header("Location: ../index.php");
+        exit;
     }
 }
 
