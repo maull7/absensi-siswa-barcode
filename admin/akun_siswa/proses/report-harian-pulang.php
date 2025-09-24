@@ -39,7 +39,7 @@
     $sql = "
     SELECT s.nis, s.nama, s.kelas, a.tanggal, a.jam_pulang
     FROM data_siswa s
-    LEFT JOIN pulang a ON s.nis = a.nis AND a.tanggal = '$tanggal'
+    LEFT JOIN absensi a ON s.nis = a.nis AND a.tanggal = '$tanggal'
     WHERE s.kelas = '$class'";
 
     $result = $koneksi->query($sql);

@@ -9,25 +9,51 @@ $jam_pulang = $_POST['jam_pulang'];
 // Mendapatkan tanggal saat ini
 $tanggal_sekarang = date('Y-m-d');
 
-// Mengecek apakah sudah ada data untuk NIS tersebut pada tanggal sekarang
-$cek_query = "SELECT * FROM pulang WHERE nis = '$nis' AND DATE_FORMAT(tanggal, '%Y-%m-%d') = '$tanggal_sekarang'";
-$cek_result = mysqli_query($koneksi, $cek_query);
+$cek_stmt = $koneksi->prepare("SELECT jam_pulang FROM absensi WHERE nis = ? AND tanggal = ?");
 
-if (mysqli_num_rows($cek_result) > 0) {
-    // Jika sudah ada data, tampilkan pesan kesalahan
-    echo "<script>alert('Anda sudah melakukan absen pulang hari ini.');window.location='../input_plg.php';</script>";
-} else {
-    // Jika belum ada data, jalankan query INSERT
-    $query = "INSERT INTO pulang (nis, jam_pulang, tanggal) VALUES ('$nis','$jam_pulang', '$tanggal_sekarang')";
-    $result = mysqli_query($koneksi, $query);
+if ($cek_stmt) {
+    $cek_stmt->bind_param('ss', $nis, $tanggal_sekarang);
+    $cek_stmt->execute();
+    $cek_stmt->bind_result($jamPulangTersimpan);
 
-    // periksa query apakah ada error
-    if (!$result) {
-        die("Query gagal dijalankan: " . mysqli_errno($koneksi) . " - " . mysqli_error($koneksi));
-    } else {
-        // tampilkan alert dan redirect ke halaman index.php
-        //echo "<script>alert('Anda Berhasil Absen Pulang.');window.location='../input_plg.php';</script>";
-        header ("location:../input_plg.php");
+    if ($cek_stmt->fetch() && $jamPulangTersimpan !== null) {
+        $cek_stmt->close();
+        echo "<script>alert('Anda sudah melakukan absen pulang hari ini.');window.location='../input_plg.php';</script>";
+        exit;
     }
+
+    $cek_stmt->close();
 }
+
+$update_stmt = $koneksi->prepare("UPDATE absensi SET jam_pulang = ? WHERE nis = ? AND tanggal = ?");
+
+if (!$update_stmt) {
+    die("Query gagal dijalankan: " . mysqli_errno($koneksi) . " - " . mysqli_error($koneksi));
+}
+
+$update_stmt->bind_param('sss', $jam_pulang, $nis, $tanggal_sekarang);
+$update_stmt->execute();
+
+if ($update_stmt->affected_rows === 0) {
+    $update_stmt->close();
+
+    $insert_stmt = $koneksi->prepare("INSERT INTO absensi (nis, tanggal, jam_pulang) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE jam_pulang = VALUES(jam_pulang)");
+    if (!$insert_stmt) {
+        die("Query gagal dijalankan: " . mysqli_errno($koneksi) . " - " . mysqli_error($koneksi));
+    }
+
+    $insert_stmt->bind_param('sss', $nis, $tanggal_sekarang, $jam_pulang);
+
+    if (!$insert_stmt->execute()) {
+        $insert_stmt->close();
+        die("Query gagal dijalankan: " . mysqli_errno($koneksi) . " - " . mysqli_error($koneksi));
+    }
+
+    $insert_stmt->close();
+} else {
+    $update_stmt->close();
+}
+
+header("location:../input_plg.php");
+exit;
 ?>

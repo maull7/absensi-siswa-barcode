@@ -36,7 +36,7 @@ if ($nis !== $nisSession) {
 $tanggalSekarang = date('Y-m-d');
 $waktuSekarang = date('H:i:s');
 
-$cekQuery = $koneksi->prepare("SELECT 1 FROM pulang WHERE nis = ? AND DATE(tanggal) = ?");
+$cekQuery = $koneksi->prepare("SELECT jam_pulang FROM absensi WHERE nis = ? AND tanggal = ?");
 if (!$cekQuery) {
     echo json_encode([
         'success' => false,
@@ -47,9 +47,9 @@ if (!$cekQuery) {
 
 $cekQuery->bind_param('ss', $nis, $tanggalSekarang);
 $cekQuery->execute();
-$cekQuery->store_result();
+$cekQuery->bind_result($jamPulangTersimpan);
 
-if ($cekQuery->num_rows > 0) {
+if ($cekQuery->fetch() && $jamPulangTersimpan !== null) {
     $cekQuery->close();
     echo json_encode([
         'success' => false,
@@ -60,8 +60,8 @@ if ($cekQuery->num_rows > 0) {
 
 $cekQuery->close();
 
-$insertQuery = $koneksi->prepare("INSERT INTO pulang (nis, jam_pulang, tanggal) VALUES (?, ?, ?)");
-if (!$insertQuery) {
+$updateQuery = $koneksi->prepare("UPDATE absensi SET jam_pulang = ? WHERE nis = ? AND tanggal = ?");
+if (!$updateQuery) {
     echo json_encode([
         'success' => false,
         'message' => 'Gagal menyiapkan penyimpanan data.'
@@ -69,19 +69,44 @@ if (!$insertQuery) {
     exit;
 }
 
-$insertQuery->bind_param('sss', $nis, $waktuSekarang, $tanggalSekarang);
+$updateQuery->bind_param('sss', $waktuSekarang, $nis, $tanggalSekarang);
+$updateQuery->execute();
 
-if ($insertQuery->execute()) {
-    echo json_encode([
-        'success' => true,
-        'message' => 'Absen pulang berhasil disimpan.'
-    ]);
-} else {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Gagal menyimpan data absensi.'
-    ]);
+if ($updateQuery->affected_rows === 0) {
+    $updateQuery->close();
+
+    $insertQuery = $koneksi->prepare("INSERT INTO absensi (nis, tanggal, jam_pulang) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE jam_pulang = VALUES(jam_pulang)");
+    if (!$insertQuery) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Gagal menyimpan data absensi.'
+        ]);
+        exit;
+    }
+
+    $insertQuery->bind_param('sss', $nis, $tanggalSekarang, $waktuSekarang);
+
+    if ($insertQuery->execute()) {
+        echo json_encode([
+            'success' => true,
+            'message' => 'Absen pulang berhasil disimpan.'
+        ]);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Gagal menyimpan data absensi.'
+        ]);
+    }
+
+    $insertQuery->close();
+    $koneksi->close();
+    exit;
 }
 
-$insertQuery->close();
+$updateQuery->close();
 $koneksi->close();
+
+echo json_encode([
+    'success' => true,
+    'message' => 'Absen pulang berhasil disimpan.'
+]);

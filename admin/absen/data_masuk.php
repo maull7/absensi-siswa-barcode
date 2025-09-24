@@ -255,9 +255,9 @@ if (isset($_SESSION['sebagai'])) {
                                         <?php
                                         $todayDate = date('Y-m-d'); 
                                         $no = '1';
-                                        $rows = mysqli_query($koneksi, "SELECT * FROM masuk
-          INNER JOIN data_siswa ON masuk.nis = data_siswa.nis
-          WHERE tanggal = '$todayDate' ORDER BY jam_masuk ASC");
+                                        $rows = mysqli_query($koneksi, "SELECT absensi.*, data_siswa.nama, data_siswa.kelas FROM absensi
+          INNER JOIN data_siswa ON absensi.nis = data_siswa.nis
+          WHERE absensi.tanggal = '$todayDate' AND absensi.jam_masuk IS NOT NULL ORDER BY absensi.jam_masuk ASC");
                                         foreach ($rows as $data) :
                                         ?>
                                             <tr>

@@ -18,8 +18,8 @@ $query = "
         a.status
     FROM 
         data_siswa s
-    LEFT JOIN 
-        masuk a ON s.nis = a.nis AND a.tanggal BETWEEN '$tanggal_mulai' AND '$tanggal_akhir'
+    LEFT JOIN
+        absensi a ON s.nis = a.nis AND a.tanggal BETWEEN '$tanggal_mulai' AND '$tanggal_akhir'
     WHERE 
         s.kelas = '$kelas'
     ORDER BY 
