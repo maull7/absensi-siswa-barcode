@@ -10,7 +10,21 @@ if (!isset($_SESSION['nis'])) {
 // Access the NIS from the session
 $nis = $_SESSION['nis'];
 
-// Now you can use $nis wherever you need it
+$feedback = $_SESSION['absen_feedback'] ?? null;
+$activeTab = 'masuk';
+$feedbackMode = null;
+$feedbackMessage = '';
+$feedbackSuccess = null;
+
+if ($feedback) {
+    $feedbackMode = $feedback['mode'] ?? null;
+    $feedbackMessage = $feedback['message'] ?? '';
+    $feedbackSuccess = $feedback['success'] ?? false;
+    if (!empty($feedbackMode)) {
+        $activeTab = $feedbackMode;
+    }
+    unset($_SESSION['absen_feedback']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -168,23 +182,35 @@ $nis = $_SESSION['nis'];
                                 <p class="mb-4">Silakan pilih jenis absensi kemudian arahkan barcode identitas Anda ke kamera.</p>
                                 <ul class="nav nav-pills mb-3" id="absen-tab" role="tablist">
                                     <li class="nav-item" role="presentation">
-                                        <a class="nav-link active" id="masuk-tab" data-toggle="pill" href="#absen-masuk" role="tab" aria-controls="absen-masuk" aria-selected="true">Absen Masuk</a>
+                                        <a class="nav-link <?= $activeTab === 'masuk' ? 'active' : '' ?>" id="masuk-tab" data-toggle="pill" href="#absen-masuk" role="tab" aria-controls="absen-masuk" aria-selected="<?= $activeTab === 'masuk' ? 'true' : 'false' ?>">Absen Masuk</a>
                                     </li>
                                     <li class="nav-item" role="presentation">
-                                        <a class="nav-link" id="pulang-tab" data-toggle="pill" href="#absen-pulang" role="tab" aria-controls="absen-pulang" aria-selected="false">Absen Pulang</a>
+                                        <a class="nav-link <?= $activeTab === 'pulang' ? 'active' : '' ?>" id="pulang-tab" data-toggle="pill" href="#absen-pulang" role="tab" aria-controls="absen-pulang" aria-selected="<?= $activeTab === 'pulang' ? 'true' : 'false' ?>">Absen Pulang</a>
                                     </li>
                                 </ul>
                                 <div class="tab-content" id="absen-tabContent">
-                                    <div class="tab-pane fade show active" id="absen-masuk" role="tabpanel" aria-labelledby="masuk-tab">
+                                    <div class="tab-pane fade <?= $activeTab === 'masuk' ? 'show active' : '' ?>" id="absen-masuk" role="tabpanel" aria-labelledby="masuk-tab">
                                         <div class="scanner-wrapper">
                                             <div id="reader-masuk" class="qr-reader"></div>
-                                            <div id="result-masuk" class="result-card"></div>
+                                            <div id="result-masuk" class="result-card">
+                                                <?php if ($feedbackMode === 'masuk' && $feedbackMessage !== ''): ?>
+                                                    <div class="alert alert-<?= $feedbackSuccess ? 'success' : 'danger' ?>" role="alert">
+                                                        <?= htmlspecialchars($feedbackMessage, ENT_QUOTES, 'UTF-8'); ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="tab-pane fade" id="absen-pulang" role="tabpanel" aria-labelledby="pulang-tab">
+                                    <div class="tab-pane fade <?= $activeTab === 'pulang' ? 'show active' : '' ?>" id="absen-pulang" role="tabpanel" aria-labelledby="pulang-tab">
                                         <div class="scanner-wrapper">
                                             <div id="reader-pulang" class="qr-reader"></div>
-                                            <div id="result-pulang" class="result-card"></div>
+                                            <div id="result-pulang" class="result-card">
+                                                <?php if ($feedbackMode === 'pulang' && $feedbackMessage !== ''): ?>
+                                                    <div class="alert alert-<?= $feedbackSuccess ? 'success' : 'danger' ?>" role="alert">
+                                                        <?= htmlspecialchars($feedbackMessage, ENT_QUOTES, 'UTF-8'); ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -225,8 +251,11 @@ $nis = $_SESSION['nis'];
         <script src="../assets/js/demo/chart-pie-demo.js"></script>
         <script>
             const sessionNis = "<?php echo $nis; ?>";
+            const defaultMode = "<?= $activeTab; ?>";
+            const readerIds = { masuk: 'reader-masuk', pulang: 'reader-pulang' };
+            const resultContainers = {};
             let activeScanner = null;
-            let isProcessing = false;
+            let activeMode = null;
 
             const scannerConfig = {
                 qrbox: {
@@ -236,25 +265,26 @@ $nis = $_SESSION['nis'];
                 fps: 15,
             };
 
-            const resultContainers = {
-                masuk: document.getElementById('result-masuk'),
-                pulang: document.getElementById('result-pulang')
-            };
-
-            function clearScanner() {
+            function stopScanner() {
                 if (activeScanner) {
                     activeScanner.clear().catch(() => {
-                        // ignore errors when clearing
+                        // abaikan error ketika berhenti memindai
                     });
                     activeScanner = null;
                 }
-                document.querySelectorAll('.qr-reader').forEach((element) => {
-                    element.innerHTML = '';
+                Object.values(readerIds).forEach((elementId) => {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        element.innerHTML = '';
+                    }
                 });
             }
 
             function showMessage(mode, type, message) {
                 const container = resultContainers[mode];
+                if (!container) {
+                    return;
+                }
                 const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
                 container.innerHTML = `
                     <div class="alert ${alertClass}" role="alert">
@@ -263,44 +293,56 @@ $nis = $_SESSION['nis'];
                 `;
             }
 
-            function handleScanSuccess(decodedText, decodedResult, mode) {
-                if (isProcessing) {
-                    return;
-                }
+            function buildCard(mode, decodedText) {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
 
+                const today = `${year}-${month}-${day}`;
+                const time = `${hours}:${minutes}:${seconds}`;
+                const validatorEndpoint = mode === 'masuk' ? 'validator.php' : 'validator_plg.php';
+
+                return `
+                    <div class="card" style="width: 18rem;">
+                        <img src="../assets/images/barcode-scan.gif" class="card-img-top" alt="Animasi pemindaian barcode">
+                        <div class="card-body">
+                            <form id="form-${mode}" action="${validatorEndpoint}" method="post">
+                                <p style="font-size: 14px;" class="card-text">Bar Code Read Successfully : <span class="badge bg-primary">${decodedText}</span></p>
+                                <p style="font-size: 14px;" class="card-text">Date : <span class="badge bg-primary">${today}</span></p>
+                                <p style="font-size: 14px;" class="card-text">Capture Time : <span class="badge bg-primary">${time}</span></p>
+                                <input type="hidden" name="nis" value="${decodedText}">
+                                <input type="hidden" name="time_val" value="${time}">
+                                <input type="hidden" name="date_val" value="${today}">
+                                <input type="hidden" name="mode" value="${mode}">
+                                <input type="submit" value="Submit" style="display: none;">
+                            </form>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function handleScanSuccess(decodedText, decodedResult, mode) {
                 if (decodedText !== sessionNis) {
                     showMessage(mode, 'error', 'Barcode tidak sesuai dengan akun yang sedang login. Silakan coba lagi.');
                     return;
                 }
 
-                const endpoint = mode === 'masuk' ? 'proses_masuk.php' : 'proses_pulang.php';
-                const formData = new FormData();
-                formData.append('nis', decodedText);
+                const container = resultContainers[mode];
+                if (!container) {
+                    return;
+                }
 
-                isProcessing = true;
+                container.innerHTML = buildCard(mode, decodedText);
+                stopScanner();
 
-                fetch(endpoint, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        const type = data.success ? 'success' : 'error';
-                        showMessage(mode, type, data.message || 'Terjadi kesalahan.');
-
-                        if (data.success) {
-                            clearScanner();
-                        }
-                    })
-                    .catch(() => {
-                        showMessage(mode, 'error', 'Gagal mengirim data absensi. Silakan coba lagi.');
-                    })
-                    .finally(() => {
-                        isProcessing = false;
-                    });
+                const form = document.getElementById(`form-${mode}`);
+                if (form) {
+                    form.submit();
+                }
             }
 
             function handleScanError(errorMessage) {
@@ -308,25 +350,30 @@ $nis = $_SESSION['nis'];
             }
 
             function startScanner(mode) {
-                clearScanner();
-                const elementId = mode === 'masuk' ? 'reader-masuk' : 'reader-pulang';
+                stopScanner();
+                activeMode = mode;
+                const elementId = readerIds[mode];
                 const scanner = new Html5QrcodeScanner(elementId, scannerConfig, false);
                 scanner.render((decodedText, decodedResult) => handleScanSuccess(decodedText, decodedResult, mode), handleScanError);
                 activeScanner = scanner;
-                resultContainers[mode].innerHTML = '';
-                isProcessing = false;
             }
 
-            $('#masuk-tab').on('shown.bs.tab', () => {
-                startScanner('masuk');
-            });
+            document.addEventListener('DOMContentLoaded', () => {
+                resultContainers.masuk = document.getElementById('result-masuk');
+                resultContainers.pulang = document.getElementById('result-pulang');
 
-            $('#pulang-tab').on('shown.bs.tab', () => {
-                startScanner('pulang');
-            });
+                startScanner(defaultMode === 'pulang' ? 'pulang' : 'masuk');
 
-            // Start default scanner
-            startScanner('masuk');
+                $('#absen-tab a[data-toggle="pill"]').on('shown.bs.tab', (event) => {
+                    const targetId = event.target.getAttribute('href');
+                    const mode = targetId === '#absen-pulang' ? 'pulang' : 'masuk';
+                    startScanner(mode);
+                });
+
+                $('#absen-tab a[data-toggle="pill"]').on('hide.bs.tab', () => {
+                    stopScanner();
+                });
+            });
         </script>
 </body>
 
