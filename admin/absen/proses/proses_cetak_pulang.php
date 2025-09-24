@@ -1,6 +1,6 @@
 <?php
 include('../../../koneksi.php');
-$result = mysqli_query($koneksi, "SELECT * FROM pulang");
+$result = mysqli_query($koneksi, "SELECT * FROM absensi");
 $rows = [];
 while ($row = mysqli_fetch_assoc($result)) {
     $rows[] = $row;
@@ -44,8 +44,9 @@ if (!isset($_SESSION['username'])) {
                 </thead>
                 <tbody>
                     <?php
-                    $rows = mysqli_query($koneksi, "SELECT * FROM pulang
-                    INNER JOIN data_siswa ON pulang.nis = data_siswa.nis");
+                    $rows = mysqli_query($koneksi, "SELECT absensi.*, data_siswa.nama, data_siswa.kelas FROM absensi
+                    INNER JOIN data_siswa ON absensi.nis = data_siswa.nis
+                    WHERE absensi.jam_pulang IS NOT NULL");
                     foreach ($rows as $data) :
 
                     ?>

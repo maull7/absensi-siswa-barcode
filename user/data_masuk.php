@@ -206,8 +206,10 @@ if (isset($_SESSION['sebagai'])) {
                                     <tbody>
                                         <?php
                                         $no = '1';
-                                        $rows = mysqli_query($koneksi, "SELECT * FROM masuk
-                                        INNER JOIN data_siswa ON masuk.nis = data_siswa.nis");
+                                        $rows = mysqli_query($koneksi, "SELECT absensi.*, data_siswa.nama, data_siswa.kelas FROM absensi
+                                        INNER JOIN data_siswa ON absensi.nis = data_siswa.nis
+                                        WHERE absensi.jam_masuk IS NOT NULL
+                                        ORDER BY absensi.tanggal DESC, absensi.jam_masuk ASC");
                                         foreach ($rows as $data) :
                                         ?>
                                             <tr>

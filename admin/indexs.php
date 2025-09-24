@@ -207,7 +207,7 @@ if (isset($_SESSION['sebagai'])) {
                     }
 
                     $c = 0;
-                    $query  = "SELECT count(nis) AS am FROM masuk WHERE id";
+                    $query  = "SELECT count(*) AS am FROM absensi";
                     $sql    = mysqli_query($koneksi, $query);
                     if(mysqli_num_rows($sql)>0){
                     $data = mysqli_fetch_assoc($sql);
@@ -215,7 +215,7 @@ if (isset($_SESSION['sebagai'])) {
                     }
                 
                     $d = 0;
-                    $query  = "SELECT count(id) AS ap FROM pulang WHERE id";
+                    $query  = "SELECT count(*) AS ap FROM absensi WHERE jam_pulang IS NOT NULL";
                     $sql    = mysqli_query($koneksi, $query);
                     if(mysqli_num_rows($sql)>0){
                     $data = mysqli_fetch_assoc($sql);

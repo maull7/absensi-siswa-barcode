@@ -1,6 +1,6 @@
 <?php
 include('../koneksi.php');
-$result = mysqli_query($koneksi, "SELECT * FROM masuk");
+$result = mysqli_query($koneksi, "SELECT * FROM absensi");
 $rows = [];
 while ($row = mysqli_fetch_assoc($result)) {
     $rows[] = $row;

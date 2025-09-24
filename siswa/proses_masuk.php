@@ -47,7 +47,7 @@ if ($waktuSekarang > $batasAbsen) {
     $statusAbsen = 'Telat';
 }
 
-$cekQuery = $koneksi->prepare("SELECT 1 FROM masuk WHERE nis = ? AND DATE(tanggal) = ?");
+$cekQuery = $koneksi->prepare("SELECT jam_masuk FROM absensi WHERE nis = ? AND tanggal = ?");
 if (!$cekQuery) {
     echo json_encode([
         'success' => false,
@@ -58,9 +58,9 @@ if (!$cekQuery) {
 
 $cekQuery->bind_param('ss', $nis, $tanggalSekarang);
 $cekQuery->execute();
-$cekQuery->store_result();
+$cekQuery->bind_result($jamMasukTersimpan);
 
-if ($cekQuery->num_rows > 0) {
+if ($cekQuery->fetch() && $jamMasukTersimpan !== null) {
     $cekQuery->close();
     echo json_encode([
         'success' => false,
@@ -71,7 +71,7 @@ if ($cekQuery->num_rows > 0) {
 
 $cekQuery->close();
 
-$insertQuery = $koneksi->prepare("INSERT INTO masuk (nis, jam_masuk, tanggal, status) VALUES (?, ?, ?, ?)");
+$insertQuery = $koneksi->prepare("INSERT INTO absensi (nis, tanggal, jam_masuk, status) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE jam_masuk = VALUES(jam_masuk), status = VALUES(status)");
 if (!$insertQuery) {
     echo json_encode([
         'success' => false,
@@ -80,7 +80,7 @@ if (!$insertQuery) {
     exit;
 }
 
-$insertQuery->bind_param('ssss', $nis, $waktuSekarang, $tanggalSekarang, $statusAbsen);
+$insertQuery->bind_param('ssss', $nis, $tanggalSekarang, $waktuSekarang, $statusAbsen);
 
 if ($insertQuery->execute()) {
     echo json_encode([

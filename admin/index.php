@@ -221,7 +221,7 @@ $tanggal = mysqli_real_escape_string($koneksi, $tanggal);
 $c = 0;
 
 // Query untuk menghitung jumlah absen berdasarkan tanggal
-$query = "SELECT COUNT(nis) AS am FROM masuk WHERE tanggal = '$tanggal' AND status =''";
+$query = "SELECT COUNT(nis) AS am FROM absensi WHERE tanggal = '$tanggal' AND status =''";
 $sql = mysqli_query($koneksi, $query);
 
 // Cek apakah query mengembalikan hasil
@@ -235,7 +235,7 @@ if ($sql && mysqli_num_rows($sql) > 0) {
 
                     $d = 0;
                     $date = date('Y-m-d');
-                    $query  = "SELECT count(id) AS ap FROM pulang WHERE tanggal ='$date' ";
+                    $query  = "SELECT COUNT(*) AS ap FROM absensi WHERE tanggal ='$date' AND jam_pulang IS NOT NULL";
                     $sql    = mysqli_query($koneksi, $query);
                     if(mysqli_num_rows($sql)>0){
                     $data = mysqli_fetch_assoc($sql);
@@ -243,7 +243,7 @@ if ($sql && mysqli_num_rows($sql) > 0) {
                     }
 
                    $e = 0;
-                    $query  = "SELECT count(nis) AS si FROM masuk WHERE status='Izin' AND tanggal = '$tanggal'";
+                    $query  = "SELECT COUNT(nis) AS si FROM absensi WHERE status='Izin' AND tanggal = '$tanggal'";
                     $sql    = mysqli_query($koneksi, $query);
                     if(mysqli_num_rows($sql)>0){
                     $data = mysqli_fetch_assoc($sql);
@@ -251,7 +251,7 @@ if ($sql && mysqli_num_rows($sql) > 0) {
                     }
                 
                     $f = 0;
-                    $query  = "SELECT count(id) AS ss FROM masuk WHERE status='Sakit' AND tanggal = '$tanggal'";
+                    $query  = "SELECT COUNT(nis) AS ss FROM absensi WHERE status='Sakit' AND tanggal = '$tanggal'";
                     $sql    = mysqli_query($koneksi, $query);
                     if(mysqli_num_rows($sql)>0){
                     $data = mysqli_fetch_assoc($sql);
@@ -259,7 +259,7 @@ if ($sql && mysqli_num_rows($sql) > 0) {
                     }
 
                     $g = 0;
-                    $query  = "SELECT count(nis) AS sa FROM masuk WHERE status='Alpha' AND tanggal = '$tanggal'";
+                    $query  = "SELECT COUNT(nis) AS sa FROM absensi WHERE status='Alpha' AND tanggal = '$tanggal'";
                     $sql    = mysqli_query($koneksi, $query);
                     if(mysqli_num_rows($sql)>0){
                     $data = mysqli_fetch_assoc($sql);
@@ -287,14 +287,14 @@ if ($sql && mysqli_num_rows($sql) > 0) {
                     }
     
                     // Query untuk menghitung jumlah ketidakhadiran per hari dalam minggu yang dipilih
-                    $queryAll = "SELECT 
+                    $queryAll = "SELECT
                         COUNT(CASE WHEN DAYOFWEEK(tanggal) = 2 THEN status END) AS Senin,
                         COUNT(CASE WHEN DAYOFWEEK(tanggal) = 3 THEN status END) AS Selasa,
                         COUNT(CASE WHEN DAYOFWEEK(tanggal) = 4 THEN status END) AS Rabu,
                         COUNT(CASE WHEN DAYOFWEEK(tanggal) = 5 THEN status END) AS Kamis,
                         COUNT(CASE WHEN DAYOFWEEK(tanggal) = 6 THEN status END) AS Jumat
-                    FROM masuk
-                    WHERE status IN ('Alpha', 'Izin', 'Sakit') 
+                    FROM absensi
+                    WHERE status IN ('Alpha', 'Izin', 'Sakit')
                     AND tanggal BETWEEN '$startDate' AND '$endDate';";
     
                     $resultAll = mysqli_query($koneksi, $queryAll);
@@ -334,7 +334,7 @@ if ($sql && mysqli_num_rows($sql) > 0) {
             status, 
             COUNT(*) AS jumlah,
             ROW_NUMBER() OVER (PARTITION BY tanggal ORDER BY COUNT(*) DESC) AS rn
-        FROM masuk
+        FROM absensi
         WHERE DAYOFWEEK(tanggal) BETWEEN 2 AND 6
         AND tanggal BETWEEN '$startDate' AND '$endDate'  -- Tambahkan filter berdasarkan tanggal
         GROUP BY tanggal, status

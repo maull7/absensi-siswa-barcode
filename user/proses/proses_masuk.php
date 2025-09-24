@@ -26,35 +26,43 @@ if ($waktu_sekarang > $batas_absen) {
     $status_absen = 'Telat';
 }
 
-// Menampilkan hasil untuk debugging (bisa dihapus dalam implementasi produksi)
-echo "Hari ini: $nama_hari\n";
-echo "Waktu sekarang: $waktu_sekarang\n";
-echo "Batas absen: $batas_absen\n";
-echo "Status absen: $status_absen\n";
-
 // Misalkan variabel $nis dan $jam_masuk sudah diambil dari input form sebelumnya
 $nis = $_POST['nis'];
 $jam_masuk = $_POST['jam_masuk'];
 
 // Mengecek apakah sudah ada data untuk NIS tersebut pada tanggal sekarang
-$cek_query = "SELECT * FROM masuk WHERE nis = '$nis' AND DATE_FORMAT(tanggal, '%Y-%m-%d') = '$tanggal_sekarang'";
-$cek_result = mysqli_query($koneksi, $cek_query);
+$cek_stmt = $koneksi->prepare("SELECT jam_masuk FROM absensi WHERE nis = ? AND tanggal = ?");
 
-if (mysqli_num_rows($cek_result) > 0) {
-    // Jika sudah ada data, tampilkan pesan kesalahan
-    echo "<script>alert('Anda sudah melakukan absen hari ini.');window.location='../input.php';</script>";
-} else {
-    // Jika belum ada data, jalankan query INSERT
-    $query = "INSERT INTO masuk (nis, jam_masuk, tanggal, status) VALUES ('$nis','$jam_masuk', '$tanggal_sekarang', '$status_absen')";
-    $result = mysqli_query($koneksi, $query);
+if ($cek_stmt) {
+    $cek_stmt->bind_param('ss', $nis, $tanggal_sekarang);
+    $cek_stmt->execute();
+    $cek_stmt->bind_result($jamMasukTersimpan);
 
-    // periksa query apakah ada error
-    if (!$result) {
-        die("Query gagal dijalankan: " . mysqli_errno($koneksi) . " - " . mysqli_error($koneksi));
-    } else {
-        // tampilkan alert dan redirect ke halaman input_plg.php
-        header("location:../index.php");
+    if ($cek_stmt->fetch() && $jamMasukTersimpan !== null) {
+        $cek_stmt->close();
+        echo "<script>alert('Anda sudah melakukan absen hari ini.');window.location='../input.php';</script>";
+        exit;
     }
+
+    $cek_stmt->close();
 }
+
+$query = "INSERT INTO absensi (nis, tanggal, jam_masuk, status) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE jam_masuk = VALUES(jam_masuk), status = VALUES(status)";
+$stmt = $koneksi->prepare($query);
+
+if (!$stmt) {
+    die("Query gagal dijalankan: " . mysqli_errno($koneksi) . " - " . mysqli_error($koneksi));
+}
+
+$stmt->bind_param('ssss', $nis, $tanggal_sekarang, $jam_masuk, $status_absen);
+
+if (!$stmt->execute()) {
+    $stmt->close();
+    die("Query gagal dijalankan: " . mysqli_errno($koneksi) . " - " . mysqli_error($koneksi));
+}
+
+$stmt->close();
+header("location:../index.php");
+exit;
 
 ?>

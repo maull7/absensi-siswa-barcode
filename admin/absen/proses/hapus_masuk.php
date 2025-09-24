@@ -1,28 +1,16 @@
 <?php
 include '../../../koneksi.php';
 
-    if (empty($_GET['laporan'])) {
-        // Assuming $config is your database connection
-        
-       // Delete records from the 'transaksi' table
-       $sql = 'DELETE FROM masuk';
-       $stmtTransaksi = $koneksi->prepare($sql);
-      $stmtTransaksi->execute();
+if (empty($_GET['laporan'])) {
+    $resetMasuk = mysqli_query($koneksi, "UPDATE absensi SET jam_masuk = NULL, status = NULL");
+    $cleanup = mysqli_query($koneksi, "DELETE FROM absensi WHERE jam_masuk IS NULL AND jam_pulang IS NULL");
 
-                                      
-$cek = mysqli_affected_rows($koneksi);
+    if ($resetMasuk && $cleanup) {
+        echo "<script>alert('BERHASIL MENGHAPUS DATA ABSEN MASUK');window.location='../data_masuk.php';</script>";
+        exit;
+    }
 
-if ($cek > 0) {
-  echo "<script> 
-          alert('BERHASIL DI MENGHAPUS');
-        </script>";
-  header("Location: ../data_masuk.php");
-} else {
-  echo "<script> 
-          alert('GAGAL DI MENGHAPUS');
-        </script>";
-  header("Location: ../data_masuk.php");
+    echo "<script>alert('GAGAL MENGHAPUS DATA ABSEN MASUK');window.location='../data_masuk.php';</script>";
+    exit;
 }
-  }
-                                        
-  ?>
+?>
