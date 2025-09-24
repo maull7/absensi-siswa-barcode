@@ -1,98 +1,95 @@
 <?php
 session_start();
-header('Content-Type: application/json');
 
 if (!isset($_SESSION['nis'])) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Sesi berakhir. Silakan login kembali.'
-    ]);
-    exit;
+    header('Location: ../index.php');
+    exit();
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Metode permintaan tidak valid.'
-    ]);
-    exit;
+    header('Location: index.php');
+    exit();
 }
 
 require_once '../koneksi.php';
 
 date_default_timezone_set('Asia/Jakarta');
 
+$feedback = [
+    'mode' => 'masuk',
+    'success' => false,
+    'message' => 'Terjadi kesalahan. Silakan coba lagi.',
+];
+
 $nisSession = $_SESSION['nis'];
 $nis = $_POST['nis'] ?? '';
+$mode = $_POST['mode'] ?? '';
+$capturedTime = $_POST['jam_masuk'] ?? '';
 
-if ($nis !== $nisSession) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Barcode tidak sesuai dengan akun yang sedang login.'
-    ]);
-    exit;
-}
+$cekQuery = null;
+$insertQuery = null;
 
-$tanggalSekarang = date('Y-m-d');
-$waktuSekarang = date('H:i:s');
-$namaHari = date('l', strtotime($tanggalSekarang));
+do {
+    if ($mode !== 'masuk') {
+        $feedback['message'] = 'Permintaan absensi tidak valid.';
+        break;
+    }
 
-$batasAbsen = '07:00:00';
-if (in_array($namaHari, ['Tuesday', 'Wednesday', 'Thursday'], true)) {
-    $batasAbsen = '07:10:00';
-}
+    if ($nis !== $nisSession) {
+        $feedback['message'] = 'Barcode tidak sesuai dengan akun yang sedang login.';
+        break;
+    }
 
-$statusAbsen = '';
-if ($waktuSekarang > $batasAbsen) {
-    $statusAbsen = 'Telat';
-}
+    $parsedTime = $capturedTime !== '' ? strtotime($capturedTime) : false;
+    $jamMasuk = $parsedTime !== false ? date('H:i:s', $parsedTime) : date('H:i:s');
 
-$cekQuery = $koneksi->prepare("SELECT 1 FROM masuk WHERE nis = ? AND DATE(tanggal) = ?");
-if (!$cekQuery) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Terjadi kesalahan pada server.'
-    ]);
-    exit;
-}
+    $tanggalSekarang = date('Y-m-d');
+    $namaHari = date('l', strtotime($tanggalSekarang));
+    $batasAbsen = in_array($namaHari, ['Tuesday', 'Wednesday', 'Thursday'], true) ? '07:10:00' : '07:00:00';
+    $statusAbsen = $jamMasuk > $batasAbsen ? 'Telat' : '';
 
-$cekQuery->bind_param('ss', $nis, $tanggalSekarang);
-$cekQuery->execute();
-$cekQuery->store_result();
+    $cekQuery = $koneksi->prepare('SELECT 1 FROM masuk WHERE nis = ? AND DATE(tanggal) = ?');
+    if (!$cekQuery) {
+        $feedback['message'] = 'Terjadi kesalahan pada server.';
+        break;
+    }
 
-if ($cekQuery->num_rows > 0) {
+    $cekQuery->bind_param('ss', $nis, $tanggalSekarang);
+    $cekQuery->execute();
+    $cekQuery->store_result();
+
+    if ($cekQuery->num_rows > 0) {
+        $feedback['message'] = 'Anda sudah melakukan absen masuk hari ini.';
+        break;
+    }
+
+    $insertQuery = $koneksi->prepare('INSERT INTO masuk (nis, jam_masuk, tanggal, status) VALUES (?, ?, ?, ?)');
+    if (!$insertQuery) {
+        $feedback['message'] = 'Gagal menyiapkan penyimpanan data.';
+        break;
+    }
+
+    $insertQuery->bind_param('ssss', $nis, $jamMasuk, $tanggalSekarang, $statusAbsen);
+
+    if (!$insertQuery->execute()) {
+        $feedback['message'] = 'Gagal menyimpan data absensi.';
+        break;
+    }
+
+    $feedback['success'] = true;
+    $feedback['message'] = 'Absen masuk berhasil disimpan.';
+} while (false);
+
+if ($cekQuery instanceof mysqli_stmt) {
     $cekQuery->close();
-    echo json_encode([
-        'success' => false,
-        'message' => 'Anda sudah melakukan absen masuk hari ini.'
-    ]);
-    exit;
 }
 
-$cekQuery->close();
-
-$insertQuery = $koneksi->prepare("INSERT INTO masuk (nis, jam_masuk, tanggal, status) VALUES (?, ?, ?, ?)");
-if (!$insertQuery) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Gagal menyiapkan penyimpanan data.'
-    ]);
-    exit;
+if ($insertQuery instanceof mysqli_stmt) {
+    $insertQuery->close();
 }
 
-$insertQuery->bind_param('ssss', $nis, $waktuSekarang, $tanggalSekarang, $statusAbsen);
-
-if ($insertQuery->execute()) {
-    echo json_encode([
-        'success' => true,
-        'message' => 'Absen masuk berhasil disimpan.'
-    ]);
-} else {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Gagal menyimpan data absensi.'
-    ]);
-}
-
-$insertQuery->close();
 $koneksi->close();
+
+$_SESSION['absen_feedback'] = $feedback;
+header('Location: index.php');
+exit();
