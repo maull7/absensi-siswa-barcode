@@ -35,6 +35,7 @@ $nis = $_SESSION['nis'];
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js" integrity="sha512-k/KAe4Yff9EUdYI5/IAHlwUswqeipP+Cp5qnrsUjTPCgl51La2/JhyyjNciztD7mWNKLSXci48m7cctATKfLlQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 </head>
 <style>
@@ -45,57 +46,23 @@ $nis = $_SESSION['nis'];
         font-family: 'Prompt', sans-serif;
     }
 
-    .header h1 {
-        font-size: 23px;
-        font-weight: 500;
-        margin-bottom: 5px;
+    .nav-pills .nav-link {
+        border-radius: 10px;
+        font-weight: 600;
     }
 
-    .header p {
-        font-size: 16px;
-        margin-bottom: 10px;
+    .scanner-wrapper {
+        max-width: 600px;
+        margin: 0 auto;
     }
 
-    input,
-    button {
-        width: 100%;
-        height: 50px;
-        outline: none;
-        border-radius: 5px;
+    .qr-reader {
+        border-radius: 12px;
+        overflow: hidden;
     }
 
-    button {
-        border: none;
-        background-color: #1d68d8;
-        font-size: 15px;
-        color: #fff;
-        cursor: pointer;
-    }
-
-    input {
-        border: 1px solid #8b8a8a;
-        padding-left: 10px;
-        margin-bottom: 15px;
-        font-size: 20px;
-    }
-
-    .qr-code {
-        padding: 25px 0;
-        border: 1px solid #ccc;
-        margin-top: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        opacity: 0;
-        pointer-events: none;
-        transition: .5s;
-    }
-
-
-    .container.active .qr-code {
-        opacity: 1;
-        pointer-events: auto;
+    .result-card {
+        margin-top: 1rem;
     }
 </style>
 
@@ -195,24 +162,31 @@ $nis = $_SESSION['nis'];
                         <!-- DataTales Example -->
                         <div class="card shadow mb-4">
                             <div class="card-header py-3">
-                                <h6 class="m-0 font-weight-bold text-primary">QR Code</h6>
+                                <h6 class="m-0 font-weight-bold text-primary">Absensi Mandiri</h6>
                             </div>
                             <div class="card-body">
-                                <div class="container">
-                                    <div class="header">
-                                        <h1>QR Code Generator</h1>
-                                        <p>Ketik NIS to Generate a QR Code</p>
+                                <p class="mb-4">Silakan pilih jenis absensi kemudian arahkan barcode identitas Anda ke kamera.</p>
+                                <ul class="nav nav-pills mb-3" id="absen-tab" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <a class="nav-link active" id="masuk-tab" data-toggle="pill" href="#absen-masuk" role="tab" aria-controls="absen-masuk" aria-selected="true">Absen Masuk</a>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <a class="nav-link" id="pulang-tab" data-toggle="pill" href="#absen-pulang" role="tab" aria-controls="absen-pulang" aria-selected="false">Absen Pulang</a>
+                                    </li>
+                                </ul>
+                                <div class="tab-content" id="absen-tabContent">
+                                    <div class="tab-pane fade show active" id="absen-masuk" role="tabpanel" aria-labelledby="masuk-tab">
+                                        <div class="scanner-wrapper">
+                                            <div id="reader-masuk" class="qr-reader"></div>
+                                            <div id="result-masuk" class="result-card"></div>
+                                        </div>
                                     </div>
-                                    <div class="input-form">
-                                        <!-- Corrected class name here -->
-                                        <input type="text" class="qr-input" value="<?php echo $nis; ?>" readonly>
-                                        <button class="generate-btn">Generate QR Code</button>
+                                    <div class="tab-pane fade" id="absen-pulang" role="tabpanel" aria-labelledby="pulang-tab">
+                                        <div class="scanner-wrapper">
+                                            <div id="reader-pulang" class="qr-reader"></div>
+                                            <div id="result-pulang" class="result-card"></div>
+                                        </div>
                                     </div>
-                                    <div class="qr-code">
-                                        <img class="qr-image">
-                                    </div>
-
-
                                 </div>
                             </div>
                         </div>
@@ -250,22 +224,109 @@ $nis = $_SESSION['nis'];
         <script src="../assets/js/demo/chart-area-demo.js"></script>
         <script src="../assets/js/demo/chart-pie-demo.js"></script>
         <script>
-            var container = document.querySelector(".container");
-            var generateBtn = document.querySelector(".generate-btn");
-            // Corrected class name here
-            var qrInput = document.querySelector(".qr-input");
-            var qrImg = document.querySelector(".qr-image");
+            const sessionNis = "<?php echo $nis; ?>";
+            let activeScanner = null;
+            let isProcessing = false;
 
-            generateBtn.onclick = function() {
-                if (qrInput.value.length > 0) {
-                    generateBtn.innerText = "Generating QR Code...";
-                    qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=" + qrInput.value;
-                    qrImg.onload = function() {
-                        container.classList.add("active");
-                        generateBtn.innerText = "Generate QR Code";
-                    }
+            const scannerConfig = {
+                qrbox: {
+                    width: 250,
+                    height: 250,
+                },
+                fps: 15,
+            };
+
+            const resultContainers = {
+                masuk: document.getElementById('result-masuk'),
+                pulang: document.getElementById('result-pulang')
+            };
+
+            function clearScanner() {
+                if (activeScanner) {
+                    activeScanner.clear().catch(() => {
+                        // ignore errors when clearing
+                    });
+                    activeScanner = null;
                 }
+                document.querySelectorAll('.qr-reader').forEach((element) => {
+                    element.innerHTML = '';
+                });
             }
+
+            function showMessage(mode, type, message) {
+                const container = resultContainers[mode];
+                const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+                container.innerHTML = `
+                    <div class="alert ${alertClass}" role="alert">
+                        ${message}
+                    </div>
+                `;
+            }
+
+            function handleScanSuccess(decodedText, decodedResult, mode) {
+                if (isProcessing) {
+                    return;
+                }
+
+                if (decodedText !== sessionNis) {
+                    showMessage(mode, 'error', 'Barcode tidak sesuai dengan akun yang sedang login. Silakan coba lagi.');
+                    return;
+                }
+
+                const endpoint = mode === 'masuk' ? 'proses_masuk.php' : 'proses_pulang.php';
+                const formData = new FormData();
+                formData.append('nis', decodedText);
+
+                isProcessing = true;
+
+                fetch(endpoint, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        const type = data.success ? 'success' : 'error';
+                        showMessage(mode, type, data.message || 'Terjadi kesalahan.');
+
+                        if (data.success) {
+                            clearScanner();
+                        }
+                    })
+                    .catch(() => {
+                        showMessage(mode, 'error', 'Gagal mengirim data absensi. Silakan coba lagi.');
+                    })
+                    .finally(() => {
+                        isProcessing = false;
+                    });
+            }
+
+            function handleScanError(errorMessage) {
+                console.warn(errorMessage);
+            }
+
+            function startScanner(mode) {
+                clearScanner();
+                const elementId = mode === 'masuk' ? 'reader-masuk' : 'reader-pulang';
+                const scanner = new Html5QrcodeScanner(elementId, scannerConfig, false);
+                scanner.render((decodedText, decodedResult) => handleScanSuccess(decodedText, decodedResult, mode), handleScanError);
+                activeScanner = scanner;
+                resultContainers[mode].innerHTML = '';
+                isProcessing = false;
+            }
+
+            $('#masuk-tab').on('shown.bs.tab', () => {
+                startScanner('masuk');
+            });
+
+            $('#pulang-tab').on('shown.bs.tab', () => {
+                startScanner('pulang');
+            });
+
+            // Start default scanner
+            startScanner('masuk');
         </script>
 </body>
 
