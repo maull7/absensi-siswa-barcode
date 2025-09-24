@@ -10,6 +10,12 @@ if (!isset($_SESSION['nis'])) {
 // Access the NIS from the session
 $nis = $_SESSION['nis'];
 
+$barcodeConfig = require __DIR__ . '/../barcode_config.php';
+$generalBarcodes = [
+    'masuk' => is_array($barcodeConfig) && isset($barcodeConfig['masuk']) ? (string) $barcodeConfig['masuk'] : 'ABSENSI-MASUK',
+    'pulang' => is_array($barcodeConfig) && isset($barcodeConfig['pulang']) ? (string) $barcodeConfig['pulang'] : 'ABSENSI-PULANG',
+];
+
 $feedback = $_SESSION['absen_feedback'] ?? null;
 $activeTab = 'masuk';
 $feedbackMode = null;
@@ -179,7 +185,7 @@ if ($feedback) {
                                 <h6 class="m-0 font-weight-bold text-primary">Absensi Mandiri</h6>
                             </div>
                             <div class="card-body">
-                                <p class="mb-4">Silakan pilih jenis absensi kemudian arahkan barcode identitas Anda ke kamera.</p>
+                                <p class="mb-4">Silakan pilih jenis absensi kemudian arahkan barcode umum (Masuk/Pulang) atau barcode identitas Anda ke kamera.</p>
                                 <ul class="nav nav-pills mb-3" id="absen-tab" role="tablist">
                                     <li class="nav-item" role="presentation">
                                         <a class="nav-link <?= $activeTab === 'masuk' ? 'active' : '' ?>" id="masuk-tab" data-toggle="pill" href="#absen-masuk" role="tab" aria-controls="absen-masuk" aria-selected="<?= $activeTab === 'masuk' ? 'true' : 'false' ?>">Absen Masuk</a>
@@ -251,6 +257,7 @@ if ($feedback) {
         <script src="../assets/js/demo/chart-pie-demo.js"></script>
         <script>
             const sessionNis = "<?php echo $nis; ?>";
+            const generalBarcodes = <?php echo json_encode($generalBarcodes, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
             const defaultMode = "<?= $activeTab; ?>";
             const readerIds = { masuk: 'reader-masuk', pulang: 'reader-pulang' };
             const resultContainers = {};
@@ -293,7 +300,17 @@ if ($feedback) {
                 `;
             }
 
-            function buildCard(mode, decodedText) {
+            function escapeHtml(value) {
+                return String(value).replace(/[&<>"']/g, (match) => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                })[match]);
+            }
+
+            function buildCard(mode, nisValue, scannedText) {
                 const now = new Date();
                 const year = now.getFullYear();
                 const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -305,20 +322,26 @@ if ($feedback) {
                 const today = `${year}-${month}-${day}`;
                 const time = `${hours}:${minutes}:${seconds}`;
                 const validatorEndpoint = mode === 'masuk' ? 'validator.php' : 'validator_plg.php';
+                const sanitizedNis = escapeHtml(nisValue);
+                const sanitizedScan = escapeHtml(scannedText);
+                const usingGeneralBarcode = nisValue !== scannedText;
 
                 return `
                     <div class="card" style="width: 18rem;">
                         <img src="../assets/images/barcode-scan.gif" class="card-img-top" alt="Animasi pemindaian barcode">
                         <div class="card-body">
                             <form id="form-${mode}" action="${validatorEndpoint}" method="post">
-                                <p style="font-size: 14px;" class="card-text">Bar Code Read Successfully : <span class="badge bg-primary">${decodedText}</span></p>
+                                <p style="font-size: 14px;" class="card-text">Data Barcode : <span class="badge bg-primary">${sanitizedScan}</span></p>
+                                <p style="font-size: 14px;" class="card-text">NIS Terkirim : <span class="badge bg-primary">${sanitizedNis}</span></p>
                                 <p style="font-size: 14px;" class="card-text">Date : <span class="badge bg-primary">${today}</span></p>
                                 <p style="font-size: 14px;" class="card-text">Capture Time : <span class="badge bg-primary">${time}</span></p>
-                                <input type="hidden" name="nis" value="${decodedText}">
+                                <input type="hidden" name="nis" value="${sanitizedNis}">
+                                <input type="hidden" name="raw_code" value="${sanitizedScan}">
                                 <input type="hidden" name="time_val" value="${time}">
                                 <input type="hidden" name="date_val" value="${today}">
                                 <input type="hidden" name="mode" value="${mode}">
                                 <input type="submit" value="Submit" style="display: none;">
+                                ${usingGeneralBarcode ? '<p class="text-muted small mt-2 mb-0">Barcode umum terdeteksi. Sistem menggunakan NIS akun Anda.</p>' : ''}
                             </form>
                         </div>
                     </div>
@@ -326,17 +349,29 @@ if ($feedback) {
             }
 
             function handleScanSuccess(decodedText, decodedResult, mode) {
-                if (decodedText !== sessionNis) {
-                    showMessage(mode, 'error', 'Barcode tidak sesuai dengan akun yang sedang login. Silakan coba lagi.');
-                    return;
-                }
-
                 const container = resultContainers[mode];
                 if (!container) {
                     return;
                 }
 
-                container.innerHTML = buildCard(mode, decodedText);
+                const trimmedText = String(decodedText).trim();
+                const personalBarcode = trimmedText === sessionNis;
+                const modeBarcode = typeof generalBarcodes[mode] === 'string' ? generalBarcodes[mode] : null;
+                const otherMode = mode === 'masuk' ? 'pulang' : 'masuk';
+                const otherModeBarcode = typeof generalBarcodes[otherMode] === 'string' ? generalBarcodes[otherMode] : null;
+                const generalBarcode = modeBarcode !== null && trimmedText === modeBarcode;
+                const otherGeneralBarcode = otherModeBarcode !== null && trimmedText === otherModeBarcode;
+
+                if (!personalBarcode && !generalBarcode) {
+                    if (otherGeneralBarcode) {
+                        showMessage(mode, 'error', `Barcode ini digunakan untuk absen ${otherMode}. Silakan pindai pada tab ${otherMode}.`);
+                    } else {
+                        showMessage(mode, 'error', 'Barcode tidak dikenali. Gunakan barcode akun Anda atau barcode umum sesuai jenis absensi.');
+                    }
+                    return;
+                }
+
+                container.innerHTML = buildCard(mode, sessionNis, trimmedText);
                 stopScanner();
 
                 const form = document.getElementById(`form-${mode}`);

@@ -110,6 +110,7 @@ if (!isset($_SESSION['username'])) {
           <div class="bg-white py-2 collapse-inner rounded">
             <a class="collapse-item" href="../absen/input.php">Masuk</a>
             <a class="collapse-item" href="../absen/input_plg.php">Pulang</a>
+            <a class="collapse-item" href="../absen/barcode_umum.php">Barcode Masuk/Pulang</a>
           </div>
         </div>
       </li>
