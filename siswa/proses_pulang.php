@@ -25,6 +25,7 @@ $nisSession = $_SESSION['nis'];
 $nis = $_POST['nis'] ?? '';
 $mode = $_POST['mode'] ?? '';
 $capturedTime = $_POST['jam_pulang'] ?? '';
+$status = '';
 
 $cekQuery = null;
 $insertQuery = null;
@@ -60,13 +61,13 @@ do {
         break;
     }
 
-    $insertQuery = $koneksi->prepare('INSERT INTO pulang (nis, jam_pulang, tanggal) VALUES (?, ?, ?)');
+    $insertQuery = $koneksi->prepare('INSERT INTO pulang (nis, jam_pulang, tanggal,status) VALUES (?, ?, ?,?)');
     if (!$insertQuery) {
         $feedback['message'] = 'Gagal menyiapkan penyimpanan data.';
         break;
     }
 
-    $insertQuery->bind_param('sss', $nis, $jamPulang, $tanggalSekarang);
+    $insertQuery->bind_param('ssss', $nis, $jamPulang, $tanggalSekarang,$status);
 
     if (!$insertQuery->execute()) {
         $feedback['message'] = 'Gagal menyimpan data absensi.';

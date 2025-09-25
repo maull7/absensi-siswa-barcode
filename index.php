@@ -7,7 +7,7 @@ if (isset($_POST['nis']) && isset($_POST['password'])) {
   $password = $_POST['password'];
 
 // Query to check user credentials
-$query = "SELECT * FROM login_siswa WHERE nis='$nis' AND password='$password'";
+$query = "SELECT * FROM data_siswa WHERE nis='$nis' AND password='$password'";
 $result = $koneksi->query($query);
 
 if ($result->num_rows == 1) {
@@ -49,6 +49,6 @@ $koneksi->close();
 
 </form>
 <!-- partial -->
-  
+
 </body>
 </html>
