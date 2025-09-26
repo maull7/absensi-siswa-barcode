@@ -198,25 +198,13 @@ if ($feedback) {
                                     <div class="tab-pane fade <?= $activeTab === 'masuk' ? 'show active' : '' ?>" id="absen-masuk" role="tabpanel" aria-labelledby="masuk-tab">
                                         <div class="scanner-wrapper">
                                             <div id="reader-masuk" class="qr-reader"></div>
-                                            <div id="result-masuk" class="result-card">
-                                                <?php if ($feedbackMode === 'masuk' && $feedbackMessage !== ''): ?>
-                                                    <div class="alert alert-<?= $feedbackSuccess ? 'success' : 'danger' ?>" role="alert">
-                                                        <?= htmlspecialchars($feedbackMessage, ENT_QUOTES, 'UTF-8'); ?>
-                                                    </div>
-                                                <?php endif; ?>
-                                            </div>
+                                            <div id="result-masuk" class="result-card"></div>
                                         </div>
                                     </div>
                                     <div class="tab-pane fade <?= $activeTab === 'pulang' ? 'show active' : '' ?>" id="absen-pulang" role="tabpanel" aria-labelledby="pulang-tab">
                                         <div class="scanner-wrapper">
                                             <div id="reader-pulang" class="qr-reader"></div>
-                                            <div id="result-pulang" class="result-card">
-                                                <?php if ($feedbackMode === 'pulang' && $feedbackMessage !== ''): ?>
-                                                    <div class="alert alert-<?= $feedbackSuccess ? 'success' : 'danger' ?>" role="alert">
-                                                        <?= htmlspecialchars($feedbackMessage, ENT_QUOTES, 'UTF-8'); ?>
-                                                    </div>
-                                                <?php endif; ?>
-                                            </div>
+                                            <div id="result-pulang" class="result-card"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -255,6 +243,7 @@ if ($feedback) {
         <!-- Page level custom scripts -->
         <script src="../assets/js/demo/chart-area-demo.js"></script>
         <script src="../assets/js/demo/chart-pie-demo.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script>
             const sessionNis = "<?php echo $nis; ?>";
             const generalBarcodes = <?php echo json_encode($generalBarcodes, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
@@ -272,6 +261,28 @@ if ($feedback) {
                 fps: 15,
             };
 
+            const feedbackData = <?php echo json_encode([
+                'mode' => $feedbackMode,
+                'message' => $feedbackMessage,
+                'success' => $feedbackSuccess,
+            ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+
+            const locationState = {
+                latitude: null,
+                longitude: null,
+                error: null,
+                watcherId: null,
+            };
+
+            let locationAlertShown = false;
+
+            function formatCoordinate(value) {
+                if (typeof value !== 'number' || Number.isNaN(value)) {
+                    return '';
+                }
+                return value.toFixed(8);
+            }
+
             function stopScanner() {
                 if (activeScanner) {
                     activeScanner.clear().catch(() => {
@@ -287,17 +298,70 @@ if ($feedback) {
                 });
             }
 
+            function updateDisplayedLocation(mode) {
+                const latSpan = document.getElementById(`latitude-display-${mode}`);
+                const lngSpan = document.getElementById(`longitude-display-${mode}`);
+                const latText = locationState.latitude !== null ? formatCoordinate(locationState.latitude) : 'Memuat lokasi...';
+                const lngText = locationState.longitude !== null ? formatCoordinate(locationState.longitude) : 'Memuat lokasi...';
+                if (latSpan) {
+                    latSpan.textContent = latText;
+                }
+                if (lngSpan) {
+                    lngSpan.textContent = lngText;
+                }
+            }
+
+            function applyLocationToForm(mode) {
+                const form = document.getElementById(`form-${mode}`);
+                if (!form) {
+                    return false;
+                }
+
+                if (locationState.latitude === null || locationState.longitude === null) {
+                    updateDisplayedLocation(mode);
+                    return false;
+                }
+
+                const latValue = formatCoordinate(locationState.latitude);
+                const lngValue = formatCoordinate(locationState.longitude);
+
+                const latInput = form.querySelector('input[name="latitude"]');
+                const lngInput = form.querySelector('input[name="longitude"]');
+
+                if (latInput) {
+                    latInput.value = latValue;
+                }
+                if (lngInput) {
+                    lngInput.value = lngValue;
+                }
+
+                updateDisplayedLocation(mode);
+                return true;
+            }
+
             function showMessage(mode, type, message) {
                 const container = resultContainers[mode];
-                if (!container) {
-                    return;
-                }
-                const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-                container.innerHTML = `
+                const sanitizedMessage = escapeHtml(message);
+                if (container) {
+                    const alertClass = type === 'success' ? 'alert-success' : type === 'warning' ? 'alert-warning' : 'alert-danger';
+                    container.innerHTML = `
                     <div class="alert ${alertClass}" role="alert">
-                        ${message}
+                        ${sanitizedMessage}
                     </div>
                 `;
+                }
+                const iconMap = {
+                    success: 'success',
+                    warning: 'warning',
+                    error: 'error',
+                };
+                const icon = iconMap[type] || 'info';
+                const title = icon === 'success' ? 'Berhasil' : icon === 'warning' ? 'Perhatian' : 'Gagal';
+                Swal.fire({
+                    icon,
+                    title,
+                    text: message,
+                });
             }
 
             function escapeHtml(value) {
@@ -325,6 +389,10 @@ if ($feedback) {
                 const sanitizedNis = escapeHtml(nisValue);
                 const sanitizedScan = escapeHtml(scannedText);
                 const usingGeneralBarcode = nisValue !== scannedText;
+                const latText = locationState.latitude !== null ? formatCoordinate(locationState.latitude) : 'Memuat lokasi...';
+                const lngText = locationState.longitude !== null ? formatCoordinate(locationState.longitude) : 'Memuat lokasi...';
+                const safeLatText = escapeHtml(latText);
+                const safeLngText = escapeHtml(lngText);
 
                 return `
                     <div class="card" style="width: 18rem;">
@@ -335,11 +403,15 @@ if ($feedback) {
                                 <p style="font-size: 14px;" class="card-text">NIS Terkirim : <span class="badge bg-primary">${sanitizedNis}</span></p>
                                 <p style="font-size: 14px;" class="card-text">Date : <span class="badge bg-primary">${today}</span></p>
                                 <p style="font-size: 14px;" class="card-text">Capture Time : <span class="badge bg-primary">${time}</span></p>
+                                <p style="font-size: 14px;" class="card-text">Latitude : <span class="badge bg-primary" id="latitude-display-${mode}">${safeLatText}</span></p>
+                                <p style="font-size: 14px;" class="card-text">Longitude : <span class="badge bg-primary" id="longitude-display-${mode}">${safeLngText}</span></p>
                                 <input type="hidden" name="nis" value="${sanitizedNis}">
                                 <input type="hidden" name="raw_code" value="${sanitizedScan}">
                                 <input type="hidden" name="time_val" value="${time}">
                                 <input type="hidden" name="date_val" value="${today}">
                                 <input type="hidden" name="mode" value="${mode}">
+                                <input type="hidden" name="latitude" value="">
+                                <input type="hidden" name="longitude" value="">
                                 <input type="submit" value="Submit" style="display: none;">
                                 ${usingGeneralBarcode ? '<p class="text-muted small mt-2 mb-0">Barcode umum terdeteksi. Sistem menggunakan NIS akun Anda.</p>' : ''}
                             </form>
@@ -371,7 +443,33 @@ if ($feedback) {
                     return;
                 }
 
+                if (locationState.latitude === null || locationState.longitude === null) {
+                    const warningText = locationState.error || 'Aplikasi belum memperoleh lokasi Anda. Pastikan GPS aktif dan izinkan akses lokasi sebelum melakukan absensi.';
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Lokasi diperlukan',
+                        text: warningText,
+                    });
+                    container.innerHTML = '';
+                    requestLocationPermission();
+                    return;
+                }
+
                 container.innerHTML = buildCard(mode, sessionNis, trimmedText);
+
+                const locationReady = applyLocationToForm(mode);
+                if (!locationReady) {
+                    const warningText = locationState.error || 'Aplikasi belum memperoleh lokasi Anda. Pastikan GPS aktif sebelum melakukan absensi.';
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Lokasi diperlukan',
+                        text: warningText,
+                    });
+                    container.innerHTML = '';
+                    startScanner(mode);
+                    return;
+                }
+
                 stopScanner();
 
                 const form = document.getElementById(`form-${mode}`);
@@ -393,9 +491,81 @@ if ($feedback) {
                 activeScanner = scanner;
             }
 
+            function translateLocationError(error) {
+                if (!error) {
+                    return 'Tidak dapat memperoleh lokasi saat ini.';
+                }
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        return 'Izin lokasi ditolak. Izinkan akses lokasi untuk melanjutkan.';
+                    case error.POSITION_UNAVAILABLE:
+                        return 'Informasi lokasi tidak tersedia. Coba aktifkan GPS atau pindah ke area terbuka.';
+                    case error.TIMEOUT:
+                        return 'Permintaan lokasi melebihi batas waktu. Coba lagi.';
+                    default:
+                        return 'Terjadi kesalahan saat mengambil lokasi.';
+                }
+            }
+
+            function requestLocationPermission() {
+                if (!('geolocation' in navigator)) {
+                    locationState.error = 'Perangkat ini tidak mendukung geolokasi.';
+                    if (!locationAlertShown) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Lokasi tidak tersedia',
+                            text: locationState.error,
+                        });
+                        locationAlertShown = true;
+                    }
+                    return;
+                }
+
+                const successHandler = (position) => {
+                    locationState.latitude = position.coords.latitude;
+                    locationState.longitude = position.coords.longitude;
+                    locationState.error = null;
+                    locationAlertShown = false;
+                    updateDisplayedLocation('masuk');
+                    updateDisplayedLocation('pulang');
+                };
+
+                const errorHandler = (error) => {
+                    locationState.error = translateLocationError(error);
+                    updateDisplayedLocation('masuk');
+                    updateDisplayedLocation('pulang');
+                    if (!locationAlertShown) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Lokasi belum tersedia',
+                            text: locationState.error,
+                        });
+                        locationAlertShown = true;
+                    }
+                };
+
+                navigator.geolocation.getCurrentPosition(successHandler, errorHandler, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0,
+                });
+
+                if (locationState.watcherId === null) {
+                    locationState.watcherId = navigator.geolocation.watchPosition(successHandler, errorHandler, {
+                        enableHighAccuracy: true,
+                        maximumAge: 5000,
+                    });
+                }
+            }
+
             document.addEventListener('DOMContentLoaded', () => {
                 resultContainers.masuk = document.getElementById('result-masuk');
                 resultContainers.pulang = document.getElementById('result-pulang');
+
+                updateDisplayedLocation('masuk');
+                updateDisplayedLocation('pulang');
+
+                requestLocationPermission();
 
                 startScanner(defaultMode === 'pulang' ? 'pulang' : 'masuk');
 
@@ -408,6 +578,16 @@ if ($feedback) {
                 $('#absen-tab a[data-toggle="pill"]').on('hide.bs.tab', () => {
                     stopScanner();
                 });
+
+                if (feedbackData && typeof feedbackData.message === 'string' && feedbackData.message !== '') {
+                    const icon = feedbackData.success ? 'success' : 'error';
+                    const title = feedbackData.success ? 'Absen Berhasil' : 'Absen Gagal';
+                    Swal.fire({
+                        icon,
+                        title,
+                        text: feedbackData.message,
+                    });
+                }
             });
         </script>
 </body>
