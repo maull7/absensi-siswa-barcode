@@ -172,11 +172,39 @@ if ($dateFormatted === '') {
 
     <script src="../assets/vendor/jquery/jquery.min.js"></script>
     <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <?php if ($isValid): ?>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        document.getElementById('validator').submit();
+        document.addEventListener('DOMContentLoaded', () => {
+            <?php if ($isValid): ?>
+            Swal.fire({
+                icon: 'success',
+                title: 'Validasi Berhasil',
+                text: <?php echo json_encode($validationMessage . ' Melanjutkan proses absensi...', JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                timer: 2000,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                willClose: () => {
+                    const form = document.getElementById('validator');
+                    if (form) {
+                        form.submit();
+                    }
+                }
+            });
+            <?php else: ?>
+            Swal.fire({
+                icon: 'error',
+                title: 'Validasi Gagal',
+                text: <?php echo json_encode($validationMessage, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                confirmButtonText: 'Kembali'
+            }).then(() => {
+                window.location.href = 'index.php';
+            });
+            <?php endif; ?>
+        });
     </script>
-    <?php endif; ?>
 </body>
 
 </html>
