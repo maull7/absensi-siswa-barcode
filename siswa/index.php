@@ -824,14 +824,6 @@ $locationMarkers = array_map(static function ($location) {
                 return;
             }
 
-            if (!Array.isArray(locationMarkers) || locationMarkers.length === 0) {
-                if (emptyState) {
-                    emptyState.classList.remove('hidden');
-                    emptyState.classList.add('flex');
-                }
-                return;
-            }
-
             const map = L.map(mapElement, {
                 zoomControl: true,
             });
@@ -841,30 +833,54 @@ $locationMarkers = array_map(static function ($location) {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> kontributor'
             }).addTo(map);
 
+            let hasMarker = false;
             const latLngs = [];
-            locationMarkers.forEach((marker) => {
-                if (typeof marker.latitude !== 'number' || typeof marker.longitude !== 'number') {
-                    return;
-                }
-                const latLng = [marker.latitude, marker.longitude];
-                latLngs.push(latLng);
-                const entries = Array.isArray(marker.entries) ? marker.entries : [];
-                const listItems = entries.map((entry) => `<li>${escapeHtml(entry)}</li>`).join('');
-                const lastUsed = marker.lastUsed ? `<p class="mt-2 text-xs text-slate-400">Terakhir digunakan: ${escapeHtml(marker.lastUsed)}</p>` : '';
-                const popupContent = `
-                    <div class="text-sm font-semibold text-slate-800">${marker.count}x absen</div>
-                    ${lastUsed}
-                    ${entries.length > 0 ? `<ul class="mt-2 space-y-1 text-xs text-slate-600">${listItems}</ul>` : ''}
-                `;
-                L.marker(latLng).addTo(map).bindPopup(popupContent);
-            });
 
-            if (latLngs.length === 1) {
+            if (Array.isArray(locationMarkers)) {
+                locationMarkers.forEach((marker) => {
+                    if (typeof marker.latitude !== 'number' || typeof marker.longitude !== 'number') {
+                        return;
+                    }
+
+                    hasMarker = true;
+                    const latLng = [marker.latitude, marker.longitude];
+                    latLngs.push(latLng);
+                    const entries = Array.isArray(marker.entries) ? marker.entries : [];
+                    const listItems = entries.map((entry) => `<li>${escapeHtml(entry)}</li>`).join('');
+                    const lastUsed = marker.lastUsed ? `<p class="mt-2 text-xs text-slate-400">Terakhir digunakan: ${escapeHtml(marker.lastUsed)}</p>` : '';
+                    const popupContent = `
+                        <div class="text-sm font-semibold text-slate-800">${marker.count}x absen</div>
+                        ${lastUsed}
+                        ${entries.length > 0 ? `<ul class="mt-2 space-y-1 text-xs text-slate-600">${listItems}</ul>` : ''}
+                    `;
+                    L.marker(latLng).addTo(map).bindPopup(popupContent);
+                });
+            }
+
+            if (!hasMarker) {
+                if (emptyState) {
+                    emptyState.classList.remove('hidden');
+                    emptyState.classList.add('flex');
+                }
+                map.setView([-2.548926, 118.014863], 5);
+            } else if (latLngs.length === 1) {
                 map.setView(latLngs[0], 17);
+                if (emptyState) {
+                    emptyState.classList.add('hidden');
+                    emptyState.classList.remove('flex');
+                }
             } else if (latLngs.length > 1) {
                 const bounds = L.latLngBounds(latLngs);
                 map.fitBounds(bounds, { padding: [30, 30] });
+                if (emptyState) {
+                    emptyState.classList.add('hidden');
+                    emptyState.classList.remove('flex');
+                }
             }
+
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
         }
 
         document.addEventListener('DOMContentLoaded', () => {

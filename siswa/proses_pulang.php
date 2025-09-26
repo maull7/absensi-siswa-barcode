@@ -59,7 +59,7 @@ do {
 
     $tanggalSekarang = date('Y-m-d');
 
-    $cekQuery = $koneksi->prepare('SELECT 1 FROM pulang WHERE nis = ? AND DATE(tanggal) = ?');
+    $cekQuery = $koneksi->prepare('SELECT jam_pulang FROM pulang WHERE nis = ? AND DATE(tanggal) = ? ORDER BY jam_pulang DESC LIMIT 1');
     if (!$cekQuery) {
         $feedback['message'] = 'Terjadi kesalahan pada server.';
         break;
@@ -67,12 +67,21 @@ do {
 
     $cekQuery->bind_param('ss', $nis, $tanggalSekarang);
     $cekQuery->execute();
-    $cekQuery->store_result();
+    $cekQuery->bind_result($jamPulangTersimpan);
 
-    if ($cekQuery->num_rows > 0) {
+    if ($cekQuery->fetch()) {
         $feedback['message'] = 'Anda sudah melakukan absen pulang hari ini.';
+        if (!empty($jamPulangTersimpan)) {
+            $parsedExisting = strtotime($jamPulangTersimpan);
+            if ($parsedExisting !== false) {
+                $feedback['message'] .= ' Catatan terakhir pada ' . date('H:i', $parsedExisting) . ' WIB.';
+            }
+        }
         break;
     }
+
+    $cekQuery->close();
+    $cekQuery = null;
 
     $insertQuery = $koneksi->prepare('INSERT INTO pulang (nis, jam_pulang, tanggal, status, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)');
     if (!$insertQuery) {
@@ -88,7 +97,7 @@ do {
     }
 
     $feedback['success'] = true;
-    $feedback['message'] = 'Absen pulang berhasil disimpan.';
+    $feedback['message'] = 'Absen pulang berhasil dicatat pada ' . date('H:i', strtotime($jamPulang)) . ' WIB.';
 } while (false);
 
 if ($cekQuery instanceof mysqli_stmt) {

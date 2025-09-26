@@ -56,7 +56,37 @@ if ($scannedNis !== $sessionNis) {
             $nama = $namaResult;
             $kelas = $kelasResult;
             $isValid = true;
-            $validationMessage = 'Barcode berhasil divalidasi.';
+            $validationMessage = 'Barcode berhasil divalidasi. Menyimpan absensi pulang...';
+
+            $tanggalSekarang = date('Y-m-d');
+            $cekAbsen = $koneksi->prepare('SELECT jam_pulang FROM pulang WHERE nis = ? AND DATE(tanggal) = ? ORDER BY jam_pulang DESC LIMIT 1');
+
+            if ($cekAbsen) {
+                $cekAbsen->bind_param('ss', $scannedNis, $tanggalSekarang);
+                $cekAbsen->execute();
+                $cekAbsen->bind_result($jamPulangTersimpan);
+
+                if ($cekAbsen->fetch()) {
+                    $isValid = false;
+                    $jamTersimpan = '';
+                    if (!empty($jamPulangTersimpan)) {
+                        $parsedStoredTime = strtotime($jamPulangTersimpan);
+                        if ($parsedStoredTime !== false) {
+                            $jamTersimpan = date('H:i', $parsedStoredTime) . ' WIB';
+                        }
+                    }
+
+                    $validationMessage = 'Anda sudah melakukan absen pulang hari ini.';
+                    if ($jamTersimpan !== '') {
+                        $validationMessage .= ' Catatan terakhir pada ' . $jamTersimpan . '.';
+                    }
+                }
+
+                $cekAbsen->close();
+            } else {
+                $isValid = false;
+                $validationMessage = 'Tidak dapat memeriksa status absensi saat ini. Silakan coba lagi.';
+            }
         } else {
             $validationMessage = 'Data siswa tidak ditemukan.';
         }
@@ -172,11 +202,39 @@ if ($dateFormatted === '') {
 
     <script src="../assets/vendor/jquery/jquery.min.js"></script>
     <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <?php if ($isValid): ?>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        document.getElementById('validator').submit();
+        document.addEventListener('DOMContentLoaded', () => {
+            <?php if ($isValid): ?>
+            Swal.fire({
+                icon: 'success',
+                title: 'Validasi Berhasil',
+                text: <?php echo json_encode($validationMessage, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                timer: 2000,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                willClose: () => {
+                    const form = document.getElementById('validator');
+                    if (form) {
+                        form.submit();
+                    }
+                }
+            });
+            <?php else: ?>
+            Swal.fire({
+                icon: 'error',
+                title: 'Validasi Gagal',
+                text: <?php echo json_encode($validationMessage, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                confirmButtonText: 'Kembali'
+            }).then(() => {
+                window.location.href = 'index.php';
+            });
+            <?php endif; ?>
+        });
     </script>
-    <?php endif; ?>
 </body>
 
 </html>
