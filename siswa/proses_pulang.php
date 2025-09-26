@@ -26,6 +26,8 @@ $nis = $_POST['nis'] ?? '';
 $mode = $_POST['mode'] ?? '';
 $capturedTime = $_POST['jam_pulang'] ?? '';
 $status = '';
+$latitudeInput = $_POST['latitude'] ?? null;
+$longitudeInput = $_POST['longitude'] ?? null;
 
 $cekQuery = null;
 $insertQuery = null;
@@ -40,6 +42,17 @@ do {
         $feedback['message'] = 'Barcode tidak sesuai dengan akun yang sedang login.';
         break;
     }
+
+    $latitudeValue = filter_var($latitudeInput, FILTER_VALIDATE_FLOAT);
+    $longitudeValue = filter_var($longitudeInput, FILTER_VALIDATE_FLOAT);
+
+    if ($latitudeValue === false || $longitudeValue === false) {
+        $feedback['message'] = 'Lokasi tidak terdeteksi. Pastikan GPS aktif dan coba lagi.';
+        break;
+    }
+
+    $latitudeFormatted = number_format($latitudeValue, 8, '.', '');
+    $longitudeFormatted = number_format($longitudeValue, 8, '.', '');
 
     $parsedTime = $capturedTime !== '' ? strtotime($capturedTime) : false;
     $jamPulang = $parsedTime !== false ? date('H:i:s', $parsedTime) : date('H:i:s');
@@ -61,13 +74,13 @@ do {
         break;
     }
 
-    $insertQuery = $koneksi->prepare('INSERT INTO pulang (nis, jam_pulang, tanggal,status) VALUES (?, ?, ?,?)');
+    $insertQuery = $koneksi->prepare('INSERT INTO pulang (nis, jam_pulang, tanggal, status, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)');
     if (!$insertQuery) {
         $feedback['message'] = 'Gagal menyiapkan penyimpanan data.';
         break;
     }
 
-    $insertQuery->bind_param('ssss', $nis, $jamPulang, $tanggalSekarang,$status);
+    $insertQuery->bind_param('ssssss', $nis, $jamPulang, $tanggalSekarang, $status, $latitudeFormatted, $longitudeFormatted);
 
     if (!$insertQuery->execute()) {
         $feedback['message'] = 'Gagal menyimpan data absensi.';

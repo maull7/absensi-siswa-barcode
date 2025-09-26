@@ -27,6 +27,13 @@ $captureDate = $_POST['date_val'] ?? '';
 $mode = $_POST['mode'] ?? '';
 $rawCode = trim($_POST['raw_code'] ?? $scannedNis);
 $displayBarcode = $rawCode !== '' ? $rawCode : $scannedNis;
+$latitudeInput = $_POST['latitude'] ?? '';
+$longitudeInput = $_POST['longitude'] ?? '';
+
+$latitudeValue = filter_var($latitudeInput, FILTER_VALIDATE_FLOAT);
+$longitudeValue = filter_var($longitudeInput, FILTER_VALIDATE_FLOAT);
+$latitudeFormatted = $latitudeValue !== false ? number_format($latitudeValue, 8, '.', '') : '';
+$longitudeFormatted = $longitudeValue !== false ? number_format($longitudeValue, 8, '.', '') : '';
 
 $validationMessage = 'Validasi Gagal';
 $isValid = false;
@@ -144,6 +151,8 @@ if ($dateFormatted === '') {
                                 <input type="hidden" name="kelas" value="<?= htmlspecialchars($kelas, ENT_QUOTES, 'UTF-8'); ?>">
                                 <input type="hidden" name="jam_pulang" value="<?= htmlspecialchars($timeFormatted, ENT_QUOTES, 'UTF-8'); ?>">
                                 <input type="hidden" name="tanggal" value="<?= htmlspecialchars($dateFormatted, ENT_QUOTES, 'UTF-8'); ?>">
+                                <input type="hidden" name="latitude" value="<?= htmlspecialchars($latitudeFormatted, ENT_QUOTES, 'UTF-8'); ?>">
+                                <input type="hidden" name="longitude" value="<?= htmlspecialchars($longitudeFormatted, ENT_QUOTES, 'UTF-8'); ?>">
                                 <input type="hidden" name="mode" value="pulang">
                                 <input type="submit" value="Kirim" style="display: none;">
                             </form>
