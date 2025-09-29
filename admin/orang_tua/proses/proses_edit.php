@@ -7,7 +7,7 @@ $nik = $_POST['nik'];
 $pw = $_POST['pw'];
 $id_siswa = $_POST['id_siswa'];
 
-$query = "UPDATE orang_tua SET nama = '$nama', nik = '$nik', pw = '$pw', id_siswa = '$id_siswa' WHERE id = '$id'";
+$query = "UPDATE orang_tua SET nama = '$nama', nik = '$nik', pw = '$pw', nis = '$id_siswa' WHERE id = '$id'";
 $result = mysqli_query($koneksi, $query);
 
 if (!$result) {

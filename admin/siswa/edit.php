@@ -60,14 +60,14 @@ if (!isset($_SESSION['username'])) {
 
     <!-- Sidebar -->
     <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
-            <div class="sticky-top"> 
+            <div class="sticky-top">
             <!-- Sidebar - Brand -->
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.php">
                 <div>
                <img src="../../assets/img/madep.png" alt="logo" width="40px">
                <span class="brand-text">Absensi</span>
                 </div>
-               
+
             </a>
 
             <!-- Divider -->
@@ -83,7 +83,7 @@ if (!isset($_SESSION['username'])) {
             <!-- Divider -->
             <hr class="sidebar-divider">
 
-        
+
 
             <!-- Nav Item - Pages Collapse Menu -->
             <li class="nav-item active">
@@ -131,7 +131,7 @@ if (!isset($_SESSION['username'])) {
 
 
 
-            
+
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
 
@@ -145,9 +145,9 @@ if (!isset($_SESSION['username'])) {
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
 
-            
 
-        
+
+
           </div>
         </ul>
         <!-- End of Sidebar -->
@@ -179,7 +179,7 @@ if (!isset($_SESSION['username'])) {
 							thisDay = myDays[thisDay];
 						var yy = date.getYear();
 						var year = (yy < 1000) ? yy + 1900 : yy;
-						document.write(thisDay + ', ' + day + ' ' + months[month] + ' ' + year);		
+						document.write(thisDay + ', ' + day + ' ' + months[month] + ' ' + year);
 						//-->
 						</script></b></div></h4>
 
@@ -218,7 +218,7 @@ if (!isset($_SESSION['username'])) {
 <br>
           <div class="row">
 
-            <div class="col-sm-8">
+            <div class="col-sm-12">
               <div class="card shadow">
                 <div class="card-header">
                   <h6 class="m-0 font-weight-bold text-primary">Ubah Data Siswa</h6>
@@ -276,17 +276,30 @@ if (!isset($_SESSION['username'])) {
                           </div>
                         </div>
                       </div>
-                      <div class="form-group">
-                        <label for="alamat">Alamat</label>
-                        <input type="text" value="<?php echo $data['alamat']; ?>" name="alamat" id="alamat" required="required" autocomplete="off" class="form-control" >
+                      <div class="row">
+                        <div class="col">
+                          <div class="form-group">
+                            <label for="alamat">Alamat</label>
+                            <input type="text" value="<?php echo $data['alamat']; ?>" name="alamat" id="alamat" required="required" autocomplete="off" class="form-control" >
+                          </div>
+                        </div>
+
+                        <div class="col">
+                          <div class="form-group">
+                            <label for="pw">Password Siswa</label>
+                            <input type="text" value="<?php echo $data['password']; ?>" name="password" id="pw" required="required" autocomplete="off" class="form-control" >
+                          </div>
+                        </div>
                       </div>
-                      <label for="img">Upload Barcode</label>
+
+
+                      <!-- <label for="img">Upload Barcode</label>
                     <div class="form-group">
                     <div class="custom-file">
                       <input type="file" value="../assets/images/<?php echo $data['img']; ?>" name="img" class="custom-file-input" id="img" style="cursor: pointer;">
                       <label class="custom-file-label" for="img">Pilih foto...</label>
                     </div>
-                    </div>
+                    </div> -->
                     <div class="form-group">
                       <button type="submit" class="btn btn-sm btn-primary" name="ubah"><i class="fa fa-pen"></i> Ubah</button>
                       <a href="index.php" class="btn btn-sm btn-secondary"><i class="fa fa-reply"></i> Kembali</a>
@@ -296,8 +309,8 @@ if (!isset($_SESSION['username'])) {
                 </div>
               </div>
             </div>
-            
-	<div class="col-md-4">
+
+	<!-- <div class="col-md-4">
 		<div class="card card-success">
 			<div class="card-header">
 				<center>
@@ -314,7 +327,7 @@ if (!isset($_SESSION['username'])) {
 				</h5>
 			</div>
 		</div>
-	</div>
+	</div> -->
 
           </div>
 

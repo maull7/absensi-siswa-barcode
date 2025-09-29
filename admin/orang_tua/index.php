@@ -16,7 +16,7 @@ if (isset($_SESSION['sebagai'])) {
 $orangTua = [];
 $orangTuaQuery = mysqli_query(
     $koneksi,
-    "SELECT orang_tua.*, data_siswa.nama AS nama_siswa, data_siswa.nis AS nis_siswa FROM orang_tua LEFT JOIN data_siswa ON orang_tua.id_siswa = data_siswa.nis ORDER BY orang_tua.nama ASC"
+    "SELECT orang_tua.*, data_siswa.nama AS nama_siswa, data_siswa.nis AS nis_siswa FROM orang_tua LEFT JOIN data_siswa ON orang_tua.nis = data_siswa.nis ORDER BY orang_tua.nama ASC"
 );
 while ($row = mysqli_fetch_assoc($orangTuaQuery)) {
     $orangTua[] = $row;

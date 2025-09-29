@@ -215,7 +215,7 @@ if (isset($_SESSION['sebagai'])) {
                         </div>
                         <div class="col">
                             <div class="d-sm-flex justify-content-between align-items-center mb-4">
-                                
+
                                 <a href="proses/exportdtsiswa.php" target="_blank" class="btn btn-primary btn-icon-split">
                                     <span class="icon text-white-55">
                                         <i class="fas fa-print"></i>
@@ -350,6 +350,10 @@ if (isset($_SESSION['sebagai'])) {
                                     <label for="alamat">Alamat</label>
                                     <input type="text" name="alamat" id="alamat" required="required" placeholder="Alamat" autocomplete="off" class="form-control">
                                 </div>
+                                 <div class="form-group">
+                                    <label for="password">Password</label>
+                                    <input type="text" name="password" id="password" required="required" placeholder="password" autocomplete="off" class="form-control">
+                                </div>
                                 <div class="form-group">
                                     <button type="submit" class="btn btn-sm btn-primary" name="tambah"><i class="fa fa-plus"></i> Tambah</button>
                                     <button type="reset" class="btn btn-sm btn-danger"><i class="fa fa-times"></i> Reset</button>
@@ -391,7 +395,7 @@ if (isset($_SESSION['sebagai'])) {
         <a class="scroll-to-top rounded" href="#page-top">
             <i class="fas fa-angle-up"></i>
         </a>
-       
+
 
 
         <!-- Bootstrap core JavaScript-->

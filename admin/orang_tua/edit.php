@@ -252,7 +252,7 @@ while ($row = mysqli_fetch_assoc($siswaQuery)) {
                       <select name="id_siswa" id="id_siswa" class="form-control js-siswa-select" data-placeholder="Cari siswa berdasarkan NIS / Nama" required>
                         <option value="">Pilih Siswa</option>
                         <?php foreach ($siswaList as $siswa) : ?>
-                          <option value="<?= $siswa['nis']; ?>" <?= $siswa['nis'] == $data['id_siswa'] ? 'selected' : ''; ?>><?= $siswa['nis']; ?> - <?= $siswa['nama']; ?></option>
+                          <option value="<?= $siswa['nis']; ?>" <?= $siswa['nis'] == $data['nis'] ? 'selected' : ''; ?>><?= $siswa['nis']; ?> - <?= $siswa['nama']; ?></option>
                         <?php endforeach; ?>
                       </select>
                     </div>

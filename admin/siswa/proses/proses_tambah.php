@@ -12,11 +12,12 @@ include '../../../koneksi.php';
   $tanggal_l = $_POST['tanggal_l'];
   $jenis_kelamin = $_POST['jenis_kelamin'];
   $alamat = $_POST['alamat'];
+  $pw = $_POST['password'];
 
 
 //cek dulu jika ada foto produk jalankan coding ini
 if($nis!= "") {
-   $query = "INSERT INTO data_siswa ( nis, nama, kelas, jurusan, tempat_l, tanggal_l, jenis_kelamin, alamat) VALUES ( '$nis','$nama','$kelas','$jurusan','$tempat_l','$tanggal_l','$jenis_kelamin','$alamat' )";
+   $query = "INSERT INTO data_siswa ( nis, nama, kelas, jurusan, tempat_l, tanggal_l, jenis_kelamin, alamat,password) VALUES ( '$nis','$nama','$kelas','$jurusan','$tempat_l','$tanggal_l','$jenis_kelamin','$alamat','$pw' )";
                   $result = mysqli_query($koneksi, $query);
                   // periska query apakah ada error
                   if(!$result){
@@ -29,4 +30,4 @@ if($nis!= "") {
                   }
 }
 
- 
+
