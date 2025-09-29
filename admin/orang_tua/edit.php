@@ -8,7 +8,7 @@ if (isset($_GET['id'])) {
   $id = ($_GET["id"]);
 
   // menampilkan data dari database yang mempunyai id=$id
-  $query = "SELECT * FROM login WHERE id='$id'";
+  $query = "SELECT * FROM orang_tua WHERE id='$id'";
   $result = mysqli_query($koneksi, $query);
   // jika data gagal diambil maka akan tampil error berikut
   if (!$result) {
@@ -25,10 +25,23 @@ if (isset($_GET['id'])) {
   // apabila tidak ada data GET id pada akan di redirect ke index.php
   echo "<script>alert('Masukkan data id.');window.location='index.php';</script>";
 }
+
 session_start();
-if (!isset($_SESSION['username'])) {
-  header("Location: ../index.php");
-  exit();
+if (!isset($_SESSION['sebagai'])) {
+    header("Location: ../../index.php");
+}
+
+if (isset($_SESSION['sebagai'])) {
+    if ($_SESSION['sebagai'] == 'user') {
+        header('Location: ../../index.php');
+        exit;
+    }
+}
+
+$siswaList = [];
+$siswaQuery = mysqli_query($koneksi, "SELECT nis, nama FROM data_siswa ORDER BY nama ASC");
+while ($row = mysqli_fetch_assoc($siswaQuery)) {
+    $siswaList[] = $row;
 }
 ?>
 <!DOCTYPE html>
@@ -42,7 +55,7 @@ if (!isset($_SESSION['username'])) {
   <meta name="description" content="">
   <meta name="author" content="">
 
-  <title>Kelola Data Mobil</title>
+  <title>Absensi | Ubah Data Orang Tua</title>
 
   <!-- Custom fonts for this template-->
   <link rel="icon" href="../../assets/img/smkmadya.png">
@@ -64,7 +77,7 @@ if (!isset($_SESSION['username'])) {
     <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
       <!-- Sidebar - Brand -->
-      <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.php">
+      <a class="sidebar-brand d-flex align-items-center justify-content-center" href="../index.php">
         <div>
           <img src="../../assets/img/madep.png" alt="logo" width="45px">
         </div>
@@ -94,10 +107,12 @@ if (!isset($_SESSION['username'])) {
         </a>
         <div id="booking" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
           <div class="bg-white py-2 collapse-inner rounded">
-            <a class="collapse-item " href="../siswa/index.php">Siswa</a>
-            <a class="collapse-item active" href="index.php">Admin</a>
-            <a class="collapse-item" href="../akun_siswa/index.php">Report Harian</a>
-            <a class="collapse-item" href="../orang_tua/index.php">Orang Tua</a>
+            <a class="collapse-item" href="../siswa/index.php">Siswa</a>
+            <a class="collapse-item" href="../akun/index.php">Admin</a>
+            <a class="collapse-item" href="../akun_siswa/index.php">Report Harian Masuk</a>
+            <a class="collapse-item" href="../akun_siswa/pulang.php">Report Harian Pulang</a>
+            <a class="collapse-item" href="../guru/index.php">Menu guru</a>
+            <a class="collapse-item active" href="index.php">Orang Tua</a>
           </div>
         </div>
       </li>
@@ -116,19 +131,19 @@ if (!isset($_SESSION['username'])) {
         </div>
       </li>
       <hr class="sidebar-divider">
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#data2" aria-expanded="true" aria-controls="collapseTwo">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>Data Absensi</span>
-                </a>
-                <div id="data2" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-                    <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item" href="../absen/data_absen.php">Data Tidak Hadir</a>
-                        <a class="collapse-item" href="../absen/data_masuk.php">Data Absen Masuk</a>
-                        <a class="collapse-item" href="../absen/data_pulang.php">Data Absen Pulang</a>
-                    </div>
-                </div>
-            </li>
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#data2" aria-expanded="true" aria-controls="collapseTwo">
+          <i class="fas fa-fw fa-table"></i>
+          <span>Data Absensi</span>
+        </a>
+        <div id="data2" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+          <div class="bg-white py-2 collapse-inner rounded">
+            <a class="collapse-item" href="../absen/data_absen.php">Data Tidak Hadir</a>
+            <a class="collapse-item" href="../absen/data_masuk.php">Data Absen Masuk</a>
+            <a class="collapse-item" href="../absen/data_pulang.php">Data Absen Pulang</a>
+          </div>
+        </div>
+      </li>
       <!-- Divider -->
       <hr class="sidebar-divider d-none d-md-block">
 
@@ -191,7 +206,7 @@ if (!isset($_SESSION['username'])) {
 
           <!-- Page Heading -->
           <div class="d-sm-flex align-items-center justify-content-between mb-4">
-            <h1 class="h3 mb-0 text-gray-800">Data Siswa</h1>
+            <h1 class="h3 mb-0 text-gray-800">Ubah Data Orang Tua</h1>
           </div>
 
           <!-- Content Row -->
@@ -199,45 +214,43 @@ if (!isset($_SESSION['username'])) {
           <div class="row">
 
             <div class="col-sm-6">
-              <div class="card shadow">
-                <div class="card-header">
-                  <h6 class="m-0 font-weight-bold text-primary">Ubah Data</h6>
+              <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                  <h6 class="m-0 font-weight-bold text-primary">Form Orang Tua</h6>
                 </div>
                 <div class="card-body">
-                  <form method="POST" action="proses/proses_edit.php" enctype="multipart/form-data">
-                    <section class="base">
-                      <!-- menampung nilai id  yang akan di edit -->
-                      <input name="id" value="<?php echo $data['id']; ?>" hidden />
-                      <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" value="<?php echo $data['username']; ?>" name="username" id="username" required="required" placeholder="ketik" autocomplete="off" class="form-control">
-                      </div>
-                      <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="text" value="<?php echo $data['password']; ?>" name="password" id="password" required="required" placeholder="ketik" autocomplete="off" class="form-control">
-                      </div>
-                      <div class="form-group">
-                        <label for="nama">Nama</label>
-                        <input type="text" value="<?php echo $data['nama']; ?>" name="nama" id="nama" required="required" placeholder="ketik" autocomplete="off" class="form-control">
-                      </div>
-                      <div class="form-group">
-                                <label for="sebagai">Sebagai</label>
-                                <select name="sebagai" id="sebagai" class="form-control">
-                                  <option value="<?=$data['sebagai'] ?>"><?=$data['sebagai'] ?></option>
-                                    <option value="admin">Admin</option>
-                                    <option value="user">User</option>
-                                </select>
-                            </div>
-                      <div class="form-group">
-                        <button type="submit" class="btn btn-sm btn-success" name="ubah"><i class="fa fa-pen"></i> Ubah</button>
-                        <button type="reset" class="btn btn-sm btn-danger"><i class="fa fa-times"></i> Batal</button>
-                        <a href="index.php" class="btn btn-sm btn-secondary"><i class="fa fa-reply"></i> Kembali</a>
-                      </div>
-                    </section>
+                  <form method="POST" action="proses/proses_edit.php">
+                    <input name="id" value="<?= $data['id']; ?>" hidden>
+                    <div class="form-group">
+                      <label for="nama">Nama Orang Tua</label>
+                      <input name="nama" value="<?= $data['nama']; ?>" id="nama" class="form-control" placeholder="Nama Orang Tua" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                      <label for="nik">NIK</label>
+                      <input name="nik" value="<?= $data['nik']; ?>" id="nik" class="form-control" placeholder="NIK" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                      <label for="pw">Password</label>
+                      <input name="pw" value="<?= $data['pw']; ?>" id="pw" class="form-control" placeholder="Password" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                      <label for="id_siswa">Data Siswa</label>
+                      <select name="id_siswa" id="id_siswa" class="form-control" required>
+                        <option value="">Pilih Siswa</option>
+                        <?php foreach ($siswaList as $siswa) : ?>
+                          <option value="<?= $siswa['nis']; ?>" <?= $siswa['nis'] == $data['id_siswa'] ? 'selected' : ''; ?>><?= $siswa['nis']; ?> - <?= $siswa['nama']; ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <button type="submit" class="btn btn-sm btn-primary"><i class="fa fa-save"></i> Simpan</button>
+                      <a href="index.php" class="btn btn-sm btn-secondary"><i class="fa fa-reply"></i> Kembali</a>
+                    </div>
                   </form>
                 </div>
               </div>
             </div>
+
           </div>
 
         </div>
@@ -246,38 +259,26 @@ if (!isset($_SESSION['username'])) {
       </div>
       <!-- End of Main Content -->
 
-
     </div>
-    <!-- End of Page Wrapper -->
+    <!-- End of Content Wrapper -->
 
-    <!-- Scroll to Top Button-->
-    <a class="scroll-to-top rounded" href="#page-top">
-      <i class="fas fa-angle-up"></i>
-    </a>
-    <!-- Bootstrap core JavaScript-->
-    <script src="../../assets/vendor/jquery/jquery.min.js"></script>
-    <script src="../../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  </div>
+  <!-- End of Page Wrapper -->
 
-    <!-- Core plugin JavaScript-->
-    <script src="../../assets/vendor/jquery-easing/jquery.easing.min.js"></script>
+  <!-- Scroll to Top Button-->
+  <a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+  </a>
 
-    <!-- Custom scripts for all pages-->
-    <script src="../../assets/js/sb-admin-2.min.js"></script>
+  <!-- Bootstrap core JavaScript-->
+  <script src="../../assets/vendor/jquery/jquery.min.js"></script>
+  <script src="../../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Page level plugins -->
-    <script src="../../assets/vendor/chart.js/Chart.min.js"></script>
+  <!-- Core plugin JavaScript-->
+  <script src="../../assets/vendor/jquery-easing/jquery.easing.min.js"></script>
 
-    <!-- Page level custom scripts -->
-    <script src="../../assets/js/demo/chart-area-demo.js"></script>
-    <script src="../../assets/js/demo/chart-pie-demo.js"></script>
-
-    <!-- Page level plugins -->
-    <script src="../../assets/vendor/datatables/jquery.dataTables.min.js"></script>
-    <script src="../../assets/vendor/datatables/dataTables.bootstrap4.min.js"></script>
-
-    <!-- Page level custom scripts -->
-    <script src="../../assets/js/demo/datatables-demo.js"></script>
-
+  <!-- Custom scripts for all pages-->
+  <script src="../../assets/js/sb-admin-2.min.js"></script>
 
 </body>
 

@@ -89,6 +89,7 @@ if (isset($_SESSION['sebagai'])) {
                         <a class="collapse-item" href="../akun_siswa/index.php">Report Harian Masuk</a>
                         <a class="collapse-item" href="../akun_siswa/pulang.php">Report Harian Pulang</a>
                         <a class="collapse-item active" href="../guru/index.php">Menu guru</a>
+                        <a class="collapse-item" href="../orang_tua/index.php">Orang Tua</a>
                     </div>
                 </div>
             </li>

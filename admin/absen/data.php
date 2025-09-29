@@ -78,6 +78,7 @@ $sekarang=date("Y-m-d");
                         <a class="collapse-item" href="../siswa/index.php">Siswa</a>
                         <a class="collapse-item" href="../akun/index.php">Admin</a>
                         <a class="collapse-item" href="../akun_siswa/index.php">Report Harian</a>
+                        <a class="collapse-item" href="../orang_tua/index.php">Orang Tua</a>
                     </div>
                 </div>
             </li>
