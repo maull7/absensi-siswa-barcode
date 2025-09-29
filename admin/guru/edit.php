@@ -98,6 +98,7 @@ if (!isset($_SESSION['username'])) {
             <a class="collapse-item" href="index.php">Admin</a>
             <a class="collapse-item" href="../akun_siswa/index.php">Report Harian</a>
             <a class="collapse-item active" href="../akun_siswa/index.php">Menu guru</a>
+            <a class="collapse-item" href="../orang_tua/index.php">Orang Tua</a>
           </div>
         </div>
       </li>
