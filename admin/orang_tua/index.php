@@ -51,6 +51,20 @@ while ($row = mysqli_fetch_assoc($siswaQuery)) {
     <!-- Custom styles for this template-->
     <link href="../../assets/css/sb-admin-2.min.css" rel="stylesheet">
     <link href="../../assets/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        .select2-container .select2-selection--single {
+            height: calc(1.5em + .75rem + 2px);
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: calc(1.5em + .75rem);
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: calc(1.5em + .75rem);
+        }
+    </style>
 
 </head>
 
@@ -282,7 +296,7 @@ while ($row = mysqli_fetch_assoc($siswaQuery)) {
                                 </div>
                                 <div class="form-group">
                                     <label for="id_siswa">Data Siswa</label>
-                                    <select name="id_siswa" id="id_siswa" required="required" class="form-control">
+                                    <select name="id_siswa" id="id_siswa" required="required" class="form-control js-siswa-select" data-placeholder="Cari siswa berdasarkan NIS / Nama">
                                         <option value="">Pilih Siswa</option>
                                         <?php foreach ($siswaList as $siswa) : ?>
                                             <option value="<?= $siswa['nis']; ?>"><?= $siswa['nis']; ?> - <?= $siswa['nama']; ?></option>
@@ -330,6 +344,21 @@ while ($row = mysqli_fetch_assoc($siswaQuery)) {
         <!-- Page level plugins -->
         <script src="../../assets/vendor/datatables/jquery.dataTables.min.js"></script>
         <script src="../../assets/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script>
+            $(document).ready(function() {
+                $('.js-siswa-select').each(function() {
+                    var $this = $(this);
+                    var parentModal = $this.closest('.modal');
+                    $this.select2({
+                        width: '100%',
+                        placeholder: $this.data('placeholder') || 'Pilih Siswa',
+                        allowClear: true,
+                        dropdownParent: parentModal.length ? parentModal : $(document.body)
+                    });
+                });
+            });
+        </script>
 
         <!-- Page level custom scripts -->
         <script src="../../assets/js/demo/datatables-demo.js"></script>
