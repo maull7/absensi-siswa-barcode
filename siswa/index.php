@@ -269,7 +269,7 @@ $locationMarkers = array_map(static function ($location) {
                             </div>
                         </div>
                         <div class="mt-6 space-y-6">
-                            <div data-tab-panel="masuk" class="space-y-5">
+                            <div data-tab-panel="masuk" class="md:space-y-5">
                                 <div id="reader-masuk" class="flex h-72 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white text-sm text-slate-400"></div>
                                 <div id="result-masuk" class="space-y-4"></div>
                             </div>
@@ -444,6 +444,17 @@ $locationMarkers = array_map(static function ($location) {
             'message' => $feedbackMessage,
             'success' => $feedbackSuccess,
         ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+
+        if (feedbackData && typeof feedbackData.message === 'string' && feedbackData.message !== '') {
+                const icon = feedbackData.success ? 'success' : 'error';
+                const title = feedbackData.success ? 'Absen Berhasil' : 'Absen Gagal';
+                Swal.fire({
+                    icon,
+                    title,
+                    text: feedbackData.message,
+                });
+            }
+            console.log(feedbackData)
 
         const locationState = {
             latitude: null,
@@ -871,20 +882,14 @@ $locationMarkers = array_map(static function ($location) {
             resultContainers.masuk = document.getElementById('result-masuk');
             resultContainers.pulang = document.getElementById('result-pulang');
 
+
             updateDisplayedLocation();
             requestLocationPermission();
             setupTabs();
             initializeLocationMap();
 
-            if (feedbackData && typeof feedbackData.message === 'string' && feedbackData.message !== '') {
-                const icon = feedbackData.success ? 'success' : 'error';
-                const title = feedbackData.success ? 'Absen Berhasil' : 'Absen Gagal';
-                Swal.fire({
-                    icon,
-                    title,
-                    text: feedbackData.message,
-                });
-            }
+
+
         });
 
         window.addEventListener('beforeunload', () => {
