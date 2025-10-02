@@ -256,7 +256,7 @@ $locationMarkers = array_map(static function ($location) {
                     <div class="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-xl shadow-indigo-500/5">
                         <div class="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                                <h2 class="text-lg font-semibold text-slate-900">Absensi Mandiri</h2>
+                                <h2 class="text-lg font-semibold text-slate-900">Absensi Siswa</h2>
                                 <p class="text-sm text-slate-500">Pindai barcode masuk atau pulang untuk merekam kehadiran Anda.</p>
                             </div>
                             <div class="flex gap-2 rounded-full bg-slate-100 p-1 text-xs font-medium text-slate-500">
@@ -270,11 +270,11 @@ $locationMarkers = array_map(static function ($location) {
                         </div>
                         <div class="mt-6 space-y-6">
                             <div data-tab-panel="masuk" class="md:space-y-5">
-                                <div id="reader-masuk" class="flex h-72 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white text-sm text-slate-400"></div>
+                                <div id="reader-masuk" class="md:flex md:h-72 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white text-sm text-slate-400"></div>
                                 <div id="result-masuk" class="space-y-4"></div>
                             </div>
                             <div data-tab-panel="pulang" class="hidden space-y-5">
-                                <div id="reader-pulang" class="flex h-72 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white text-sm text-slate-400"></div>
+                                <div id="reader-pulang" class="md:flex md:h-72 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white text-sm text-slate-400"></div>
                                 <div id="result-pulang" class="space-y-4"></div>
                             </div>
                         </div>
