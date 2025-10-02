@@ -2,6 +2,8 @@
 // memanggil file koneksi.php untuk membuat koneksi
 include '../../koneksi.php';
 
+$orangTua = ['nama' => '-', 'nik' => '-'];
+
 // mengecek apakah di url ada nilai GET id
 if (isset($_GET['nis'])) {
   // ambil nilai id dari url dan disimpan dalam variabel $id
@@ -20,6 +22,10 @@ if (isset($_GET['nis'])) {
   // apabila data tidak ada pada database maka akan dijalankan perintah ini
   if (!count($data)) {
     echo "<script>alert('Data tidak ditemukan pada database');window.location='index.php';</script>";
+  }
+  $orangTuaQuery = mysqli_query($koneksi, "SELECT nama, nik FROM orang_tua WHERE nis='$nis' LIMIT 1");
+  if ($orangTuaQuery && mysqli_num_rows($orangTuaQuery) > 0) {
+    $orangTua = mysqli_fetch_assoc($orangTuaQuery);
   }
 } else {
   // apabila tidak ada data GET id pada akan di redirect ke index.php
@@ -283,17 +289,33 @@ if (isset($_SESSION['sebagai'])) {
 								<?php echo $data['jenis_kelamin']; ?>
 							</td>
 						</tr>
-						<tr>
-							<td style="width: 150px">
-								<b>Alamat</b>
-							</td>
-							<td>:
-								<?php echo $data['alamat']; ?>
-							</td>
-						</tr>
-						
-					</tbody>
-				</table>
+                                                <tr>
+                                                        <td style="width: 150px">
+                                                                <b>Alamat</b>
+                                                        </td>
+                                                        <td>:
+                                                                <?php echo $data['alamat']; ?>
+                                                        </td>
+                                                </tr>
+                                                <tr>
+                                                        <td style="width: 150px">
+                                                                <b>Nama Orang Tua/Wali</b>
+                                                        </td>
+                                                        <td>:
+                                                                <?php echo (!empty($orangTua['nama']) ? $orangTua['nama'] : '-'); ?>
+                                                        </td>
+                                                </tr>
+                                                <tr>
+                                                        <td style="width: 150px">
+                                                                <b>NIK Orang Tua/Wali</b>
+                                                        </td>
+                                                        <td>:
+                                                                <?php echo (!empty($orangTua['nik']) ? $orangTua['nik'] : '-'); ?>
+                                                        </td>
+                                                </tr>
+
+                                        </tbody>
+                                </table>
 				<div>
           <a href="proses/proses_cetak.php?nis=<?= $data['nis']; ?>" class="btn btn-sm btn-primary" target="_blank"><i class="fas fa-id-card mr-2"></i>Cetak Kartu</a>
           <a class="btn btn-sm btn-secondary" onclick="goBack()"><i class="fa fa-reply"></i> Kembali</a>

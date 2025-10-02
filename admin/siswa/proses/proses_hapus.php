@@ -1,22 +1,28 @@
 <?php
 include '../../../koneksi.php';
-$nis = $_GET['nis'];
 
-// Properly escape the value to prevent SQL injection
-$nis = mysqli_real_escape_string($koneksi, $nis);
+$nis = mysqli_real_escape_string($koneksi, $_GET['nis'] ?? '');
 
-$result = mysqli_query($koneksi, "DELETE FROM data_siswa WHERE nis = '$nis'");
-$cek = mysqli_affected_rows($koneksi);
+if ($nis === '') {
+    echo "<script>alert('Data siswa tidak ditemukan.');window.location='../index.php';</script>";
+    exit();
+}
 
-if ($cek > 0) {
-  echo "<script> 
-          alert('BERHASIL DI MENGHAPUS');
-        </script>";
-  header("Location: ../index.php");
-} else {
-  echo "<script> 
-          alert('GAGAL DI MENGHAPUS');
-        </script>";
-  header("Location: ../index.php");
+mysqli_begin_transaction($koneksi);
+
+try {
+    $deleteSiswa = mysqli_query($koneksi, "DELETE FROM data_siswa WHERE nis = '$nis'");
+    if (!$deleteSiswa) {
+        throw new Exception('Gagal menghapus data siswa: ' . mysqli_error($koneksi));
+    }
+
+    mysqli_query($koneksi, "DELETE FROM orang_tua WHERE nis = '$nis'");
+
+    mysqli_commit($koneksi);
+    echo "<script>alert('Data siswa dan akun orang tua berhasil dihapus.');window.location='../index.php';</script>";
+} catch (Exception $e) {
+    mysqli_rollback($koneksi);
+    $message = addslashes($e->getMessage());
+    echo "<script>alert('" . $message . "');window.location='../index.php';</script>";
 }
 ?>

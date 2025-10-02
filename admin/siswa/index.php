@@ -350,9 +350,24 @@ if (isset($_SESSION['sebagai'])) {
                                     <label for="alamat">Alamat</label>
                                     <input type="text" name="alamat" id="alamat" required="required" placeholder="Alamat" autocomplete="off" class="form-control">
                                 </div>
+                                <div class="row">
+                                    <div class="col">
+                                        <div class="form-group">
+                                            <label for="nama_orang_tua">Nama Orang Tua/Wali</label>
+                                            <input type="text" name="nama_orang_tua" id="nama_orang_tua" required="required" placeholder="Nama Orang Tua/Wali" autocomplete="off" class="form-control">
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="form-group">
+                                            <label for="nik_orang_tua">NIK Orang Tua/Wali</label>
+                                            <input type="text" name="nik_orang_tua" id="nik_orang_tua" required="required" placeholder="NIK Orang Tua/Wali" autocomplete="off" class="form-control">
+                                        </div>
+                                    </div>
+                                </div>
                                  <div class="form-group">
-                                    <label for="password">Password</label>
-                                    <input type="text" name="password" id="password" required="required" placeholder="password" autocomplete="off" class="form-control">
+                                    <label for="password">Password Akun</label>
+                                    <input type="text" name="password" id="password" required="required" placeholder="Kata sandi untuk siswa dan orang tua" autocomplete="off" class="form-control">
+                                    <small class="form-text text-muted">Kata sandi ini akan digunakan bersama untuk akun siswa dan orang tua.</small>
                                 </div>
                                 <div class="form-group">
                                     <button type="submit" class="btn btn-sm btn-primary" name="tambah"><i class="fa fa-plus"></i> Tambah</button>
