@@ -268,6 +268,57 @@ if ($sql && mysqli_num_rows($sql) > 0) {
                     $g  = $data['sa'];
                     }
 
+                    $statusCounts = [
+                        'Hadir' => 0,
+                        'Izin' => 0,
+                        'Sakit' => 0,
+                        'Alpha' => 0,
+                    ];
+                    $statusTambahan = [];
+
+                    $statusQuery = mysqli_query($koneksi, "SELECT IF(status IS NULL OR status = '', 'Hadir', status) AS status_label, COUNT(*) AS total FROM masuk WHERE tanggal = '$tanggal' GROUP BY status_label");
+                    if ($statusQuery) {
+                        while ($rowStatus = mysqli_fetch_assoc($statusQuery)) {
+                            $labelStatus = $rowStatus['status_label'] ?? '';
+                            $jumlahStatus = (int) ($rowStatus['total'] ?? 0);
+                            if (array_key_exists($labelStatus, $statusCounts)) {
+                                $statusCounts[$labelStatus] = $jumlahStatus;
+                            } else {
+                                $statusTambahan[$labelStatus] = $jumlahStatus;
+                            }
+                        }
+                    }
+
+                    $statusDistributionSeries = [];
+                    foreach ($statusCounts as $labelStatus => $jumlahStatus) {
+                        $statusDistributionSeries[] = [
+                            'name' => $labelStatus,
+                            'y' => $jumlahStatus
+                        ];
+                    }
+                    foreach ($statusTambahan as $labelStatus => $jumlahStatus) {
+                        $statusDistributionSeries[] = [
+                            'name' => $labelStatus,
+                            'y' => $jumlahStatus
+                        ];
+                    }
+
+                    $totalMasukHarian = 0;
+                    $totalMasukQuery = mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM masuk WHERE tanggal = '$tanggal'");
+                    if ($totalMasukQuery && mysqli_num_rows($totalMasukQuery) > 0) {
+                        $rowMasuk = mysqli_fetch_assoc($totalMasukQuery);
+                        $totalMasukHarian = (int) ($rowMasuk['total'] ?? 0);
+                    }
+
+                    $totalPulangHarian = 0;
+                    $totalPulangQuery = mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM pulang WHERE tanggal = '$tanggal'");
+                    if ($totalPulangQuery && mysqli_num_rows($totalPulangQuery) > 0) {
+                        $rowPulang = mysqli_fetch_assoc($totalPulangQuery);
+                        $totalPulangHarian = (int) ($rowPulang['total'] ?? 0);
+                    }
+
+                    $belumPulangHarian = max($totalMasukHarian - $totalPulangHarian, 0);
+
                     $today = new DateTime();
 
                     // Mengatur tanggal akhir ke hari Jumat
@@ -530,21 +581,48 @@ if ($sql && mysqli_num_rows($sql) > 0) {
                                         </div>
 
                             <div class="col-xl-4 col-md-6 mb-4">
-                                <div class="card border-left-danger shadow h-100 py-2">
-                                    <div class="card-body">
-                                        <div class="row no-gutters align-items-center">
-                                            <div class="col mr-2">
-                                                <div class="text-xl font-weight-bold text-danger text-uppercase mb-1">
-                                                    Total Siswa Alpha</div>
-                                                <div class="h5 mb-0 font-weight-bold text-gray-800"><?= number_format($g); ?></div>
+                                            <div class="card border-left-danger shadow h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div class="text-xl font-weight-bold text-danger text-uppercase mb-1">
+                                                                Total Siswa Alpha</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"><?= number_format($g); ?></div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-address-book fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div class="col-auto">
-                                                <i class="fas fa-address-book fa-2x text-gray-300"></i>
+                                        </div>
+
+                            <div class="col-12">
+                                <div class="row">
+                                    <div class="col-xl-6 col-lg-6 mb-4">
+                                        <div class="card shadow h-100">
+                                            <div class="card-header py-3">
+                                                <h6 class="m-0 font-weight-bold text-primary">Distribusi Status Absen Masuk (<?= htmlspecialchars(date('d F Y', strtotime($tanggal)), ENT_QUOTES, 'UTF-8'); ?>)</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="statusMasukChart" style="height: 320px;"></div>
+                                                <p class="mt-3 text-xs text-muted mb-0">Absen masuk menandakan siswa hadir. Status izin, sakit, atau alpha tercatat ketika siswa tidak hadir di sekolah.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-6 col-lg-6 mb-4">
+                                        <div class="card shadow h-100">
+                                            <div class="card-header py-3">
+                                                <h6 class="m-0 font-weight-bold text-primary">Perbandingan Absen Masuk &amp; Pulang (<?= htmlspecialchars(date('d F Y', strtotime($tanggal)), ENT_QUOTES, 'UTF-8'); ?>)</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="perbandinganMasukPulangChart" style="height: 320px;"></div>
+                                                <p class="mt-3 text-xs text-muted mb-0">Absen pulang bersifat opsional sehingga jumlahnya sering kali lebih sedikit daripada absen masuk.</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>   
+                            </div>
 
                     </div>
                     <figure class="highcharts-figure">
@@ -646,8 +724,20 @@ if ($sql && mysqli_num_rows($sql) > 0) {
     }
 </style>
 
+<?php
+    $statusDistributionJson = json_encode($statusDistributionSeries, JSON_UNESCAPED_UNICODE);
+    $kehadiranComparisonData = [
+        'masuk' => $totalMasukHarian,
+        'pulang' => $totalPulangHarian,
+        'belum' => $belumPulangHarian,
+    ];
+    $kehadiranComparisonJson = json_encode($kehadiranComparisonData, JSON_UNESCAPED_UNICODE);
+?>
+
 <script>
     // Pastikan variabel-variabel ini terdefinisi
+    const statusDistributionSeries = <?php echo $statusDistributionJson; ?>;
+    const kehadiranComparison = <?php echo $kehadiranComparisonJson; ?>;
     const senin = <?php echo json_encode($senin); ?>; // Contoh nilai
     const selasa = <?php echo json_encode($selasa); ?>; // Contoh nilai
     const rabu = <?php echo json_encode($rabu); ?>; // Contoh nilai
@@ -668,6 +758,71 @@ if ($sql && mysqli_num_rows($sql) > 0) {
 
     // Membuat chart saat halaman dimuat
     document.addEventListener('DOMContentLoaded', function() {
+        Highcharts.chart('statusMasukChart', {
+            chart: {
+                type: 'pie'
+            },
+            title: {
+                text: 'Distribusi Status Absen Masuk'
+            },
+            tooltip: {
+                pointFormat: '<b>{point.y} siswa</b>'
+            },
+            accessibility: {
+                point: {
+                    valueSuffix: ' siswa'
+                }
+            },
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                        enabled: true,
+                        format: '{point.name}: {point.y}'
+                    }
+                }
+            },
+            series: [{
+                name: 'Jumlah',
+                colorByPoint: true,
+                data: statusDistributionSeries
+            }]
+        });
+
+        Highcharts.chart('perbandinganMasukPulangChart', {
+            chart: {
+                type: 'column'
+            },
+            title: {
+                text: 'Perbandingan Absen Masuk & Pulang'
+            },
+            xAxis: {
+                type: 'category'
+            },
+            yAxis: {
+                title: {
+                    text: 'Jumlah Siswa'
+                },
+                allowDecimals: false
+            },
+            legend: {
+                enabled: false
+            },
+            tooltip: {
+                pointFormat: '<b>{point.y} siswa</b>'
+            },
+            series: [{
+                name: 'Jumlah',
+                colorByPoint: true,
+                data: [
+                    { name: 'Absen Masuk', y: parseInt(kehadiranComparison.masuk || 0, 10), color: '#1cc88a' },
+                    { name: 'Absen Pulang', y: parseInt(kehadiranComparison.pulang || 0, 10), color: '#e74a3b' },
+                    { name: 'Belum Pulang', y: parseInt(kehadiranComparison.belum || 0, 10), color: '#36b9cc' }
+                ]
+            }]
+        });
+
         Highcharts.chart('container', {
             chart: {
                 type: 'spline'

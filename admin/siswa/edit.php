@@ -2,6 +2,8 @@
 // memanggil file koneksi.php untuk membuat koneksi
 include '../../koneksi.php';
 
+$orangTua = ['nama' => '', 'nik' => ''];
+
 // mengecek apakah di url ada nilai GET id
 if (isset($_GET['nis'])) {
   // ambil nilai id dari url dan disimpan dalam variabel $id
@@ -20,6 +22,11 @@ if (isset($_GET['nis'])) {
   // apabila data tidak ada pada database maka akan dijalankan perintah ini
   if (!count($data)) {
     echo "<script>alert('Data tidak ditemukan pada database');window.location='index.php';</script>";
+  }
+  $orangTua = ['nama' => '', 'nik' => ''];
+  $orangTuaQuery = mysqli_query($koneksi, "SELECT nama, nik FROM orang_tua WHERE nis='$nis' LIMIT 1");
+  if ($orangTuaQuery && mysqli_num_rows($orangTuaQuery) > 0) {
+    $orangTua = mysqli_fetch_assoc($orangTuaQuery);
   }
 } else {
   // apabila tidak ada data GET id pada akan di redirect ke index.php
@@ -283,11 +290,27 @@ if (!isset($_SESSION['username'])) {
                             <input type="text" value="<?php echo $data['alamat']; ?>" name="alamat" id="alamat" required="required" autocomplete="off" class="form-control" >
                           </div>
                         </div>
-
+                      </div>
+                      <div class="row">
                         <div class="col">
                           <div class="form-group">
-                            <label for="pw">Password Siswa</label>
+                            <label for="nama_orang_tua">Nama Orang Tua/Wali</label>
+                            <input type="text" value="<?php echo isset($orangTua['nama']) ? $orangTua['nama'] : ''; ?>" name="nama_orang_tua" id="nama_orang_tua" required="required" autocomplete="off" class="form-control" >
+                          </div>
+                        </div>
+                        <div class="col">
+                          <div class="form-group">
+                            <label for="nik_orang_tua">NIK Orang Tua/Wali</label>
+                            <input type="text" value="<?php echo isset($orangTua['nik']) ? $orangTua['nik'] : ''; ?>" name="nik_orang_tua" id="nik_orang_tua" required="required" autocomplete="off" class="form-control" >
+                          </div>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col">
+                          <div class="form-group">
+                            <label for="pw">Password Akun</label>
                             <input type="text" value="<?php echo $data['password']; ?>" name="password" id="pw" required="required" autocomplete="off" class="form-control" >
+                            <small class="form-text text-muted">Kata sandi ini digunakan untuk akun siswa dan orang tua.</small>
                           </div>
                         </div>
                       </div>
