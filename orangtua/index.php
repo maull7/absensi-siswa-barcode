@@ -1,35 +1,49 @@
 <?php
 session_start();
-require_once 'koneksi.php';
+require_once '../koneksi.php';
+
+if (isset($_SESSION['orang_tua_id'])) {
+    header('Location: dashboard.php');
+    exit();
+}
 
 $errorMessage = '';
-$nisInput = '';
+$nikInput = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nisInput = isset($_POST['nis']) ? trim($_POST['nis']) : '';
+    $nikInput = isset($_POST['nik']) ? trim($_POST['nik']) : '';
     $passwordInput = isset($_POST['password']) ? trim($_POST['password']) : '';
 
-    if ($nisInput === '' || $passwordInput === '') {
-        $errorMessage = 'Masukkan NIS dan kata sandi Anda.';
+    if ($nikInput === '' || $passwordInput === '') {
+        $errorMessage = 'Masukkan NIK dan kata sandi Anda.';
     } else {
-        $stmt = $koneksi->prepare('SELECT nis FROM data_siswa WHERE nis = ? AND password = ? LIMIT 1');
+        $stmt = $koneksi->prepare('SELECT id, nama, nik, pw, nis FROM orang_tua WHERE nik = ? LIMIT 1');
 
         if ($stmt) {
-            $stmt->bind_param('ss', $nisInput, $passwordInput);
+            $stmt->bind_param('s', $nikInput);
             $stmt->execute();
             $stmt->store_result();
 
             if ($stmt->num_rows === 1) {
-                $_SESSION['nis'] = $nisInput;
-                $_SESSION['password'] = $passwordInput;
-                $stmt->close();
-                $koneksi->close();
-                header('Location: siswa/index.php');
-                exit();
+                $stmt->bind_result($id, $nama, $nik, $passwordDb, $nisAnak);
+                $stmt->fetch();
+
+                if (hash_equals((string) $passwordDb, $passwordInput)) {
+                    $_SESSION['orang_tua_id'] = $id;
+                    $_SESSION['orang_tua_nama'] = $nama;
+                    $_SESSION['orang_tua_nik'] = $nik;
+                    $_SESSION['orang_tua_nis'] = $nisAnak;
+
+                    $stmt->close();
+                    $koneksi->close();
+
+                    header('Location: dashboard.php');
+                    exit();
+                }
             }
 
             $stmt->close();
-            $errorMessage = 'NIS atau kata sandi Anda tidak cocok.';
+            $errorMessage = 'NIK atau kata sandi Anda tidak cocok.';
         } else {
             $errorMessage = 'Gagal memproses permintaan. Silakan coba lagi.';
         }
@@ -44,8 +58,8 @@ $koneksi->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Absensi Siswa | Masuk</title>
-    <link rel="icon" href="assets/img/smkmadya.png">
+    <title>Absensi Siswa | Masuk Orang Tua</title>
+    <link rel="icon" href="../assets/img/smkmadya.png">
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
     <script>
         tailwind.config = {
@@ -78,10 +92,10 @@ $koneksi->close();
     <div class="w-full max-w-md">
         <div class="mb-10 text-center">
             <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-                <img src="assets/img/smkmadya.png" alt="Logo Sekolah" class="h-10 w-10 object-contain" />
+                <img src="../assets/img/smkmadya.png" alt="Logo Sekolah" class="h-10 w-10 object-contain" />
             </div>
-            <h1 class="mt-6 text-3xl font-semibold text-slate-900">Portal Absensi Siswa</h1>
-            <p class="mt-2 text-sm text-slate-500">Masuk menggunakan akun siswa Anda untuk melakukan absensi harian.</p>
+            <h1 class="mt-6 text-3xl font-semibold text-slate-900">Portal Orang Tua</h1>
+            <p class="mt-2 text-sm text-slate-500">Pantau kehadiran siswa secara real-time.</p>
         </div>
 
         <div class="rounded-3xl border border-slate-200 bg-white/90 shadow-xl shadow-indigo-500/5 backdrop-blur-sm">
@@ -93,9 +107,9 @@ $koneksi->close();
                 <?php endif; ?>
                 <form method="post" class="space-y-6">
                     <div>
-                        <label for="nis" class="block text-sm font-medium text-slate-700">NIS</label>
-                        <input type="text" id="nis" name="nis" value="<?= htmlspecialchars($nisInput, ENT_QUOTES, 'UTF-8'); ?>"
-                            autocomplete="username" placeholder="Masukkan NIS Anda" required
+                        <label for="nik" class="block text-sm font-medium text-slate-700">NIK</label>
+                        <input type="text" id="nik" name="nik" value="<?= htmlspecialchars($nikInput, ENT_QUOTES, 'UTF-8'); ?>"
+                            autocomplete="username" placeholder="Masukkan NIK Anda" required
                             class="mt-2 block w-full rounded-2xl border-slate-200 bg-slate-50/60 px-4 py-3 text-slate-900 shadow-inner focus:border-primary focus:ring-primary" />
                     </div>
                     <div>
@@ -110,15 +124,9 @@ $koneksi->close();
                     </button>
                 </form>
             </div>
-            <div class="space-y-2 border-t border-slate-100 px-8 py-6 text-sm text-slate-500">
-                <div class="flex items-center justify-between">
-                    <span>Ingin mengelola data?</span>
-                    <a href="admin.php" class="font-medium text-primary hover:text-indigo-600">Masuk sebagai Admin</a>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span>Orang tua ingin memantau?</span>
-                    <a href="orangtua/index.php" class="font-medium text-primary hover:text-indigo-600">Masuk sebagai Orang Tua</a>
-                </div>
+            <div class="flex items-center justify-between border-t border-slate-100 px-8 py-6 text-sm text-slate-500">
+                <a href="../index.php" class="font-medium text-primary hover:text-indigo-600">Masuk sebagai Siswa</a>
+                <a href="../admin.php" class="font-medium text-primary hover:text-indigo-600">Masuk sebagai Admin</a>
             </div>
         </div>
     </div>
