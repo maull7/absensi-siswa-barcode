@@ -42,72 +42,12 @@ if (isset($_SESSION['sebagai'])) {
     <div id="wrapper">
 
         <!-- Sidebar -->
-        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
-            <div class="sticky-top">
-            <!-- Sidebar - Brand -->
-            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
-                <div>
-                    <img src="../assets/img/madep.png" alt="logo" width="40px">
-                    <span class="brand-text">Absensi</span>
-                </div>
-
-            </a>
-
-            <!-- Divider -->
-            <hr class="sidebar-divider my-0">
-
-            <!-- Nav Item - Dashboard -->
-           
-
-            <!-- Divider -->
-           
-
-            <!-- Nav Item - Pages Collapse Menu -->
-            <hr class="sidebar-divider">
-            <li class="nav-item">
-          
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#data" aria-expanded="true" aria-controls="collapseTwo">
-                    <i class="fas fa-fw fa-receipt"></i>
-                    <span>Absensi</span>
-                </a>
-                <div id="data" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-                    <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="index.php">Masuk</a>
-                    </div>
-                </div>
-            </li>
-            <hr class="sidebar-divider">
-            <li class="nav-item active">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#data2" aria-expanded="true" aria-controls="collapseTwo">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>Data Absensi</span>
-                </a>
-                <div id="data2" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-                    <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item active" href="data_masuk.php">Data Absen Masuk</a>
-                        <a class="collapse-item" href="akun_siswa/index.php">Report Harian</a>
-                    </div>
-                </div>
-            </li>
-
-
-            <!-- Divider -->
-            <hr class="sidebar-divider d-none d-md-block">
-
-
-
-            <li class="nav-item">
-                <a class="nav-link" href="../logout.php">
-                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray"></i>
-                    <span>Logout</span></a>
-            </li>
-
-            <!-- Divider -->
-            <hr class="sidebar-divider d-none d-md-block">
-
-
-            </div>
-        </ul>
+        <?php
+        $sidebarCurrentPage = 'data_absen_masuk';
+        $sidebarRootPath = '../';
+        $sidebarUserPath = '';
+        include __DIR__ . '/sidebar.php';
+        ?>
         <!-- End of Sidebar -->
 
         <!-- Content Wrapper -->
